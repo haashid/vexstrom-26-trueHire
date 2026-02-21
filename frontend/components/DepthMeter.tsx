@@ -21,7 +21,7 @@ export default function DepthMeter({ score, label }: DepthMeterProps) {
         >
             <div
                 style={{
-                    fontFamily: 'IBM Plex Sans, sans-serif',
+                    fontFamily: 'var(--font-inter), sans-serif',
                     fontSize: '0.7rem',
                     fontWeight: 600,
                     color: 'var(--text-dim)',
@@ -48,7 +48,7 @@ export default function DepthMeter({ score, label }: DepthMeterProps) {
                 <div style={{ marginBottom: '4px' }}>
                     <div
                         style={{
-                            fontFamily: 'IBM Plex Sans, sans-serif',
+                            fontFamily: 'var(--font-inter), sans-serif',
                             fontSize: '0.85rem',
                             fontWeight: 500,
                             color,
@@ -58,7 +58,7 @@ export default function DepthMeter({ score, label }: DepthMeterProps) {
                     </div>
                     <div
                         style={{
-                            fontFamily: 'IBM Plex Sans, sans-serif',
+                            fontFamily: 'var(--font-inter), sans-serif',
                             fontSize: '0.72rem',
                             color: 'var(--text-dim)',
                         }}

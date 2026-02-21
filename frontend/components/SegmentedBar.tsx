@@ -17,7 +17,7 @@ export default function SegmentedBar({ value, showLabel = true, label, height = 
         <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
             {showLabel && label && (
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontFamily: 'IBM Plex Sans', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+                    <span style={{ fontFamily: 'var(--font-inter), sans-serif', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
                         {label}
                     </span>
                     <span

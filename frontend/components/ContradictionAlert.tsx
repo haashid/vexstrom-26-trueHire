@@ -36,7 +36,7 @@ export default function ContradictionAlert({
                         <span style={{ fontSize: '1.1rem' }}>🚨</span>
                         <span
                             style={{
-                                fontFamily: 'DM Sans, sans-serif',
+                                fontFamily: 'var(--font-inter), sans-serif',
                                 fontWeight: 700,
                                 fontSize: '0.95rem',
                                 color: 'var(--red)',
@@ -63,7 +63,7 @@ export default function ContradictionAlert({
                             background: 'transparent',
                             border: '1px solid var(--red)',
                             color: 'var(--red)',
-                            fontFamily: 'IBM Plex Sans, sans-serif',
+                            fontFamily: 'var(--font-inter), sans-serif',
                             fontSize: '0.78rem',
                             fontWeight: 500,
                             padding: '5px 12px',
@@ -91,7 +91,7 @@ export default function ContradictionAlert({
                     >
                         <div
                             style={{
-                                fontFamily: 'IBM Plex Sans, sans-serif',
+                                fontFamily: 'var(--font-inter), sans-serif',
                                 fontSize: '0.7rem',
                                 fontWeight: 600,
                                 color: 'var(--text-dim)',
@@ -123,7 +123,7 @@ export default function ContradictionAlert({
                     >
                         <div
                             style={{
-                                fontFamily: 'IBM Plex Sans, sans-serif',
+                                fontFamily: 'var(--font-inter), sans-serif',
                                 fontSize: '0.7rem',
                                 fontWeight: 600,
                                 color: 'var(--red)',

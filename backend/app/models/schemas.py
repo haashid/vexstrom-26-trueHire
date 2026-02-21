@@ -55,7 +55,18 @@ class EvaluateAnswerResponse(BaseModel):
     contradiction_detail: Optional[str] = Field(None, description="Explanation if contradiction found.")
     bluff_likelihood: float = Field(..., ge=0.0, le=1.0, description="Probability candidate is bluffing or guessing.")
     confidence_level: float = Field(..., ge=0.0, le=1.0, description="Assessed confidence level of candidate's verbal delivery logic.")
-    suggested_follow_up: str = Field(..., description="A tight follow-up question to probe weaknesses.")
+    follow_up_questions: List[str] = Field(default_factory=list, description="A list of tight follow-up questions to probe weaknesses.")
+    technical_feedback: str = Field(..., description="Qualitative feedback on the technical correctness and depth.")
+    detailed_assessment: Dict[str, str] = Field(..., description="A breakdown of specific strengths and weaknesses in the answer.")
+
+class IdentifySpeakerRequest(BaseModel):
+    utterance: str = Field(..., description="The new spoken text to identify.")
+    transcript: List[TranscriptMessage] = Field(..., description="The recent conversational history.")
+
+class IdentifySpeakerResponse(BaseModel):
+    speaker: str = Field(..., description="Likely speaker: 'interviewer' or 'candidate'")
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Confidence in the identification.")
+    reasoning: str = Field(..., description="Brief reasoning for the choice.")
 
 # --- Final Verdict Models ---
 
@@ -65,6 +76,7 @@ class VerdictRequest(BaseModel):
 
 class VerdictResponse(BaseModel):
     verdict: str = Field(..., description="The final decision: 'Hire', 'No-Hire', 'Strong Hire', etc.")
+    confidence: int = Field(..., ge=0, le=100, description="Confidence score for the final verdict.")
     reasoning_trace: List[str] = Field(..., description="Step-by-step reasoning trace from multiple agents explaining the verdict.")
     skill_heatmap: Dict[str, int] = Field(..., description="Heatmap of skills mapped to their scores (1-10).")
     discrepancy_log: List[DiscrepancyLogItem] = Field(..., description="Log of any notable discrepancies found during the interview loop.")

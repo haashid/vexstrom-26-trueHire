@@ -10,7 +10,9 @@ from app.utils.pdf_utils import extract_text_from_pdf
 from app.models.schemas import (
     EvaluateAnswerRequest, 
     VerdictRequest,
-    VerdictResponse
+    VerdictResponse,
+    IdentifySpeakerRequest,
+    IdentifySpeakerResponse
 )
 
 router = APIRouter()
@@ -81,6 +83,20 @@ async def evaluate_candidate_answer(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error during evaluation.")
+
+@router.post("/identify-speaker", response_model=IdentifySpeakerResponse)
+async def identify_speaker(
+    request: IdentifySpeakerRequest,
+    service: InterviewService = Depends(get_interview_service)
+):
+    """
+    Identifies if an utterance belongs to the interviewer or candidate.
+    """
+    try:
+        transcript_dicts = [msg.model_dump() for msg in request.transcript]
+        return await service.identify_speaker(request.utterance, transcript_dicts)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail="Internal server error identifying speaker.")
 
 @router.post("/verdict", response_model=VerdictResponse, status_code=status.HTTP_200_OK)
 async def generate_final_verdict(

@@ -11,11 +11,12 @@ class VerdictAgent:
     You are the final Hiring Committee Lead. Review all collected data: 
     the initial resume analysis, the generated questions, and the candidate's answers & evaluations.
     
-    Your deliverable is a firm hiring verdict with an analytical reasoning trace.
+    Your deliverable is a firm hiring verdict with an analytical reasoning trace and a percentage confidence score.
     
     Output strictly in the following JSON format:
     {
       "verdict": "Strong Hire | Hire | Leaning Hire | Leaning No-Hire | No-Hire",
+      "confidence": 85,
       "reasoning_trace": [
         "Analyzed resume matching 80% of core JD.",
         "Detected strong grasp in Tier 2 backend questions.",

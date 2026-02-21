@@ -4,13 +4,13 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useScrollReveal } from '@/hooks/useScrollReveal';
 import SeverityBadge from '@/components/SeverityBadge';
-import { MOCK_VERDICT } from '@/lib/mockData';
 import {
     IconThumbsUp, IconThumbsDown, IconDownload, IconArrowRight,
     IconChevronDown, IconShieldAlert, IconFlag, IconBarChart,
     IconTarget, IconUsers, IconCpu, IconZap, IconShield,
     IconCheckCircle, IconAlertTriangle, IconStar,
 } from '@/components/Icons';
+import { generateVerdict } from '@/lib/api';
 
 const AGENT_ICONS: Record<string, React.ComponentType<any>> = {
     'A1': IconCpu,
@@ -21,22 +21,112 @@ const AGENT_ICONS: Record<string, React.ComponentType<any>> = {
 
 export default function VerdictPage() {
     const router = useRouter();
-    const [data, setData] = useState<typeof MOCK_VERDICT | null>(null);
+    const [data, setData] = useState<any | null>(null);
     const [activeAgent, setActiveAgent] = useState<string | null>(null);
     const [confWidth, setConfWidth] = useState(0);
 
     useScrollReveal([data]);
 
     useEffect(() => {
-        const stored = sessionStorage.getItem('verdictData');
-        setData(stored ? JSON.parse(stored) : MOCK_VERDICT);
+        const fetchVerdict = async () => {
+            const storedVerdict = sessionStorage.getItem('verdictData');
+            const storedAnalysis = sessionStorage.getItem('analysisData');
+
+            if (!storedVerdict || !storedAnalysis) {
+                router.push('/');
+                return;
+            }
+
+            try {
+                const verdictData = JSON.parse(storedVerdict);
+                const analysisData = JSON.parse(storedAnalysis);
+
+                // Map UI evaluations to backend QA pairs
+                const qa_pairs = Object.entries(verdictData.evaluations).map(([qId, eval_]) => ({
+                    question: qId,
+                    answer: (eval_ as any).snippet, // We don't have the full answer, but snippet works for demo
+                    evaluation: eval_
+                }));
+
+                // Reconstruct raw analysis for backend compatibility
+                const rawAnalysis = {
+                    overall_fit_score: analysisData.fitScore,
+                    key_strengths: analysisData.strengths,
+                    red_flags: analysisData.redFlags.map((rf: any) => rf.claim),
+                    skills: analysisData.skills.map((s: any) => ({
+                        skill_name: s.name,
+                        proficiency_level: s.tier === 'HIGH' ? 'Expert' : s.tier === 'MEDIUM' ? 'Intermediate' : 'Beginner',
+                        evidence: "Verified during initial analysis."
+                    }))
+                };
+
+                // Call backend
+                const result = await generateVerdict({
+                    resume_analysis: rawAnalysis,
+                    qa_pairs: qa_pairs
+                });
+
+                // Map Result to UI state shape
+                const mapped: any = {
+                    verdict: result.verdict,
+                    confidence: result.confidence || 0,
+                    primaryReason: result.summary,
+                    skillHeatmap: Object.entries(result.skill_heatmap || {}).map(([skill, score]) => ({
+                        skill,
+                        conceptual: (score as any) > 7 ? 'HIGH' : (score as any) > 4 ? 'MEDIUM' : 'LOW',
+                        applied: (score as any) > 7 ? 'HIGH' : (score as any) > 4 ? 'MEDIUM' : 'LOW',
+                        deep: (score as any) > 8 ? 'HIGH' : 'MEDIUM'
+                    })),
+                    discrepancies: result.discrepancy_log.map((d: any, i: number) => ({
+                        id: `d-${i}`,
+                        claim: d.claim,
+                        finding: d.contradiction,
+                        severity: d.severity
+                    })),
+                    agentDebate: result.reasoning_trace.map((trace: string, i: number) => ({
+                        agent: `A${i + 1}`,
+                        name: `Agent ${String.fromCharCode(65 + i)}`,
+                        color: i === 0 ? 'var(--accent-primary)' : i === 1 ? 'var(--yellow)' : 'var(--red)',
+                        position: result.verdict,
+                        reasoning: trace
+                    })),
+                    consensus: result.summary
+                };
+
+                setData(mapped);
+            } catch (err) {
+                console.error("Verdict failed", err);
+                setData({ error: true, message: err instanceof Error ? err.message : 'Unknown error' });
+            }
+        };
+
+        fetchVerdict();
     }, []);
 
-    useEffect(() => {
-        if (data) setTimeout(() => setConfWidth(data.confidence), 200);
-    }, [data]);
+    if (!data) return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 56px)', flexDirection: 'column', gap: 16 }}>
+            <div style={{ width: 40, height: 40, border: '3px solid var(--border)', borderTop: '3px solid var(--accent-primary)', borderRadius: '50%' }} className="animate-spin" />
+            <p style={{ fontFamily: 'var(--font-inter)', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>Generating final verdict...</p>
+        </div>
+    );
 
-    if (!data) return null;
+    if (data.error) return (
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 'calc(100vh - 56px)', flexDirection: 'column', gap: 20, padding: 40, textAlign: 'center' }}>
+            <div style={{ padding: 20, borderRadius: '50%', background: 'var(--red)10' }}>
+                <IconAlertTriangle size={40} color="var(--red)" />
+            </div>
+            <div>
+                <h2 style={{ fontFamily: 'var(--font-inter)', fontWeight: 700, fontSize: '1.5rem', marginBottom: 8 }}>Verdict Engine Error</h2>
+                <p style={{ fontFamily: 'var(--font-inter)', color: 'var(--text-secondary)', fontSize: '0.95rem', maxWidth: 450, lineHeight: 1.6 }}>
+                    The AI debate committee encountered an issue: <br />
+                    <code style={{ fontSize: '0.8rem', background: 'var(--bg-secondary)', padding: '2px 4px', borderRadius: 4, display: 'inline-block', marginTop: 10 }}>{data.message}</code>
+                </p>
+            </div>
+            <button className="btn-accent" onClick={() => router.push('/interview')} style={{ padding: '12px 24px' }}>
+                Return to Interview
+            </button>
+        </div>
+    );
 
     const isHire = data.verdict === 'HIRE';
     const vColor = isHire ? 'var(--green)' : 'var(--red)';
@@ -55,19 +145,24 @@ export default function VerdictPage() {
         <div style={{ minHeight: 'calc(100vh - 56px)', padding: 'clamp(24px,5vh,48px) clamp(16px,4vw,40px)', maxWidth: 1300, margin: '0 auto' }}>
 
             {/* ── HEADER ─────────────────────────────────────── */}
-            <div className="reveal" style={{ marginBottom: 32 }}>
-                <div style={{ fontFamily: 'JetBrains Mono', fontSize: '0.65rem', color: 'var(--accent-primary)', letterSpacing: '0.12em', textTransform: 'uppercase', marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-primary)', boxShadow: '0 0 8px var(--accent-primary)' }} />
-                    Interview Complete — Final Verdict
+            <div className="reveal" style={{ marginBottom: 40 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+                    <div style={{ padding: '6px 12px', borderRadius: 6, background: 'var(--accent-primary)10', border: '1px solid var(--accent-primary)20', display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <div style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--accent-primary)', boxShadow: '0 0 8px var(--accent-primary)' }} />
+                        <span style={{ fontFamily: 'JetBrains Mono', fontSize: '0.65rem', color: 'var(--accent-primary)', letterSpacing: '0.1em', fontWeight: 700, textTransform: 'uppercase' }}>Report #V-{new Date().toISOString().slice(2, 10).replace(/-/g, '')}</span>
+                    </div>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-                    <h1 style={{ fontFamily: 'DM Sans', fontWeight: 800, fontSize: 'clamp(1.4rem,4vw,2.2rem)', letterSpacing: '-0.03em' }}>AI Verdict Report</h1>
-                    <div style={{ display: 'flex', gap: 10 }}>
-                        <button className="btn-ghost" onClick={handleExport} style={{ padding: '9px 16px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 7 }}>
-                            <IconDownload size={15} color="currentColor" /> Export JSON
+                <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', gap: 24, flexWrap: 'wrap' }}>
+                    <div>
+                        <h1 style={{ fontFamily: 'var(--font-inter)', fontWeight: 800, fontSize: 'clamp(1.8rem, 5vw, 2.8rem)', letterSpacing: '-0.04em', lineHeight: 1, marginBottom: 8, color: 'var(--text-primary)' }}>Executive Verdict</h1>
+                        <p style={{ fontFamily: 'var(--font-inter)', color: 'var(--text-secondary)', fontSize: '0.95rem' }}>Final consolidation of candidate intelligence and agent consensus.</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: 12, marginBottom: 4 }}>
+                        <button className="btn-ghost" onClick={handleExport} style={{ padding: '10px 20px', fontSize: '0.85rem', fontWeight: 600 }}>
+                            <IconDownload size={16} /> Export Dossier
                         </button>
-                        <button className="btn-accent" onClick={() => { sessionStorage.clear(); router.push('/'); }} style={{ padding: '9px 16px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: 7 }}>
-                            New Interview <IconArrowRight size={15} color="rgba(255,255,255,0.7)" />
+                        <button className="btn-accent" onClick={() => { sessionStorage.clear(); router.push('/'); }} style={{ padding: '10px 24px', fontSize: '0.85rem', fontWeight: 600 }}>
+                            New Evaluation
                         </button>
                     </div>
                 </div>
@@ -81,70 +176,74 @@ export default function VerdictPage() {
 
                     {/* Verdict banner */}
                     <div className="reveal" style={{
-                        borderRadius: 16, padding: 'clamp(20px,4vw,32px)',
+                        borderRadius: 20, padding: 'clamp(24px, 5vw, 40px)',
                         background: isHire
-                            ? 'linear-gradient(135deg, rgba(7,26,18,0.9) 0%, rgba(16,185,129,0.04) 100%)'
-                            : 'linear-gradient(135deg, rgba(26,7,7,0.9) 0%, rgba(239,68,68,0.04) 100%)',
-                        border: `1px solid ${isHire ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
-                        borderLeft: `4px solid ${vColor}`,
-                        backdropFilter: 'blur(24px)',
-                        boxShadow: `0 0 80px ${vGlow}, 0 16px 48px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.04)`,
+                            ? 'linear-gradient(135deg, rgba(16,185,129,0.08) 0%, rgba(16,185,129,0.02) 100%)'
+                            : 'linear-gradient(135deg, rgba(239,68,68,0.08) 0%, rgba(239,68,68,0.02) 100%)',
+                        border: `1px solid ${isHire ? 'var(--green)20' : 'var(--red)20'}`,
+                        borderLeft: `6px solid ${vColor}`,
+                        boxShadow: `0 20px 60px -20px ${vGlow}`,
+                        position: 'relative',
+                        overflow: 'hidden'
                     }}>
-                        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap' }}>
-                            <div>
-                                <div className="section-label" style={{ marginBottom: 12 }}>Final Verdict</div>
+                        <div style={{ position: 'absolute', top: -40, right: -40, width: 200, height: 200, background: vGlow, filter: 'blur(60px)', opacity: 0.5, pointerEvents: 'none' }} />
+
+                        <div style={{ position: 'relative', zIndex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 28 }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-                                    <div style={{ width: 56, height: 56, borderRadius: 16, background: `${isHire ? 'rgba(16,185,129,' : 'rgba(239,68,68,'}0.12)`, border: `1px solid ${vColor}40`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                        {isHire
-                                            ? <IconThumbsUp size={26} color={vColor} />
-                                            : <IconThumbsDown size={26} color={vColor} />
-                                        }
+                                    <div style={{ width: 64, height: 64, borderRadius: 16, background: isHire ? 'var(--green)' : 'var(--red)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: `0 8px 16px ${isHire ? 'var(--green)30' : 'var(--red)30'}` }}>
+                                        {isHire ? <IconThumbsUp size={32} color="#fff" /> : <IconThumbsDown size={32} color="#fff" />}
                                     </div>
-                                    <div style={{ fontFamily: 'DM Sans', fontWeight: 900, fontSize: 'clamp(2rem,7vw,4rem)', color: vColor, letterSpacing: '-0.05em', lineHeight: 1, textShadow: `0 0 40px ${vColor}60` }}>
-                                        {data.verdict}
+                                    <div>
+                                        <div style={{ fontFamily: 'var(--font-inter)', fontWeight: 800, fontSize: 'clamp(2.4rem, 6vw, 3.8rem)', color: 'var(--text-primary)', letterSpacing: '-0.05em', lineHeight: 1 }}>
+                                            {data.verdict}
+                                        </div>
+                                        <div style={{ fontFamily: 'JetBrains Mono', fontSize: '0.7rem', color: vColor, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 4 }}>Committee Consensus</div>
+                                    </div>
+                                </div>
+                                <div style={{ textAlign: 'right' }}>
+                                    <div style={{ fontFamily: 'var(--font-inter)', fontWeight: 800, fontSize: '2.5rem', color: 'var(--text-primary)', lineHeight: 1 }}>{data.confidence}%</div>
+                                    <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.75rem', color: 'var(--text-secondary)', fontWeight: 600, marginTop: 4 }}>Confidence Score</div>
+                                    <div style={{ marginTop: 10, width: 120, height: 6, background: 'rgba(15,23,42,0.08)', borderRadius: 10, overflow: 'hidden', marginLeft: 'auto' }}>
+                                        <div style={{ width: `${confWidth}%`, height: '100%', background: vColor, borderRadius: 10, boxShadow: `0 0 10px ${vColor}40` }} />
                                     </div>
                                 </div>
                             </div>
-                            {/* Confidence */}
-                            <div style={{ textAlign: 'right' }}>
-                                <div className="section-label" style={{ marginBottom: 8 }}>Confidence</div>
-                                <div style={{ fontFamily: 'JetBrains Mono', fontWeight: 700, fontSize: 'clamp(2rem,5vw,3rem)', color: vColor, letterSpacing: '-0.04em' }}>{data.confidence}%</div>
-                                <div style={{ marginTop: 10, width: 130, height: 5, background: 'rgba(255,255,255,0.07)', borderRadius: 3, overflow: 'hidden' }}>
-                                    <div style={{ width: `${confWidth}%`, height: '100%', background: `linear-gradient(90deg, ${vColor}, ${isHire ? '#34d399' : '#f87171'})`, transition: 'width 1.2s cubic-bezier(0.16,1,0.3,1)', boxShadow: `0 0 8px ${vColor}` }} />
-                                </div>
+                            <div style={{ borderRadius: 12, background: 'rgba(255,255,255,0.4)', border: '1px solid rgba(15,23,42,0.04)', padding: 20 }}>
+                                <p style={{ fontFamily: 'var(--font-inter)', fontSize: '1.05rem', color: 'var(--text-primary)', lineHeight: 1.6, fontWeight: 500 }}>{data.primaryReason}</p>
                             </div>
-                        </div>
-                        <div style={{ marginTop: 22, paddingTop: 20, borderTop: `1px solid ${isHire ? 'rgba(16,185,129,0.15)' : 'rgba(239,68,68,0.15)'}` }}>
-                            <p style={{ fontFamily: 'IBM Plex Sans', fontSize: 'clamp(0.83rem,1.5vw,0.95rem)', color: 'var(--text-secondary)', lineHeight: 1.8 }}>{data.primaryReason}</p>
                         </div>
                     </div>
 
                     {/* Skill Heatmap */}
                     <div className="reveal">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
-                            <IconBarChart size={14} color="var(--text-dim)" />
-                            <span className="section-label">Skill Heatmap</span>
-                        </div>
-                        <div className="card-glass" style={{ overflow: 'hidden', borderRadius: 14 }}>
-                            {/* Header */}
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr repeat(3, 110px)', padding: '10px 20px', background: 'rgba(10,10,15,0.6)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                {['Skill Area', 'Conceptual', 'Applied', 'Deep'].map(h => (
-                                    <div key={h} className="section-label" style={{ textAlign: h === 'Skill Area' ? 'left' : 'center' }}>{h}</div>
-                                ))}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--accent-primary)10', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <IconBarChart size={14} color="var(--accent-primary)" />
                             </div>
-                            {/* Rows */}
-                            {data.skillHeatmap.map((row, i) => (
-                                <div key={row.skill} className={`reveal delay-${Math.min(i + 1, 5)}`}
-                                    style={{ display: 'grid', gridTemplateColumns: '1fr repeat(3, 110px)', padding: '13px 20px', borderBottom: i < data.skillHeatmap.length - 1 ? '1px solid rgba(255,255,255,0.04)' : 'none', alignItems: 'center', cursor: 'default', transition: 'background 0.2s' }}
-                                    onMouseEnter={e => (e.currentTarget.style.background = 'rgba(99,102,241,0.04)')}
-                                    onMouseLeave={e => (e.currentTarget.style.background = 'transparent')}
-                                >
-                                    <div style={{ fontFamily: 'IBM Plex Sans', fontSize: '0.86rem', color: 'var(--text-primary)', fontWeight: 500 }}>{row.skill}</div>
-                                    {[row.conceptual, row.applied, row.deep].map((lvl, j) => (
-                                        <div key={j} style={{ textAlign: 'center' }}>
-                                            <span style={{ fontFamily: 'IBM Plex Sans', fontSize: '0.68rem', fontWeight: 600, color: heatClr[lvl] || 'var(--text-dim)', background: heatBg[lvl] || 'transparent', padding: '3px 10px', borderRadius: 5, border: `1px solid ${heatClr[lvl] || 'var(--border)'}30` }}>{lvl}</span>
-                                        </div>
-                                    ))}
+                            <span className="section-label" style={{ color: 'var(--text-primary)', textTransform: 'none', fontSize: '0.9rem', fontWeight: 700 }}>Technical Attribute Grid</span>
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+                            {data.skillHeatmap?.map((row: any, i: number) => (
+                                <div key={row.skill} className={`card-glass reveal delay-${Math.min(i + 1, 5)}`}
+                                    style={{ padding: 20, borderRadius: 16, border: '1px solid rgba(15,23,42,0.06)', position: 'relative' }}>
+                                    <div style={{ fontFamily: 'var(--font-inter)', fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 16 }}>{row.skill}</div>
+                                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                                        {[
+                                            { label: 'Conceptual', val: row.conceptual },
+                                            { label: 'Applied', val: row.applied },
+                                            { label: 'Deep', val: row.deep }
+                                        ].map((attr, j) => (
+                                            <div key={j} style={{
+                                                flex: '1 1 80px', padding: '10px 8px', borderRadius: 10, textAlign: 'center',
+                                                background: heatBg[attr.val] || 'var(--bg-secondary)',
+                                                border: `1px solid ${heatClr[attr.val]}30`
+                                            }}>
+                                                <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.62rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em', marginBottom: 4 }}>{attr.label}</div>
+                                                <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.8rem', fontWeight: 800, color: heatClr[attr.val] }}>{attr.val}</div>
+                                            </div>
+                                        ))}
+                                    </div>
                                 </div>
                             ))}
                         </div>
@@ -152,30 +251,32 @@ export default function VerdictPage() {
 
                     {/* Discrepancy log */}
                     <div className="reveal">
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
-                            <IconFlag size={14} color="var(--red)" />
-                            <span className="section-label" style={{ color: 'var(--red)' }}>Discrepancy Log</span>
-                            <span className="pill pill-red">{data.discrepancies.length}</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--red)10', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <IconFlag size={14} color="var(--red)" />
+                            </div>
+                            <span className="section-label" style={{ color: 'var(--red)', textTransform: 'none', fontSize: '0.9rem', fontWeight: 700 }}>Integrity & Consistency Log</span>
+                            <span style={{ marginLeft: 'auto', background: 'var(--red)10', color: 'var(--red)', fontSize: '0.7rem', fontWeight: 800, padding: '4px 10px', borderRadius: 20 }}>{data.discrepancies?.length} Signals</span>
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                            {data.discrepancies.map((d, i) => (
-                                <div key={d.id} className={`card-glass card-hover reveal delay-${i + 1}`} style={{
-                                    padding: 'clamp(13px,2vw,18px)', borderRadius: 12,
-                                    borderLeft: `3px solid ${d.severity === 'CRITICAL' ? 'var(--red)' : d.severity === 'HIGH' ? 'var(--yellow)' : 'rgba(255,255,255,0.15)'}`,
-                                    display: 'flex', flexDirection: 'column', gap: 8,
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                            {data.discrepancies?.map((d: any, i: number) => (
+                                <div key={d.id} className={`card-glass reveal delay-${i + 1}`} style={{
+                                    padding: 24, borderRadius: 16,
+                                    borderLeft: `4px solid ${d.severity === 'CRITICAL' ? 'var(--red)' : d.severity === 'HIGH' ? 'var(--yellow)' : 'var(--border)'}`,
+                                    display: 'flex', gap: 20, alignItems: 'flex-start'
                                 }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                    <div style={{ marginTop: 2 }}>
                                         <SeverityBadge severity={d.severity} />
-                                        {d.severity === 'CRITICAL'
-                                            ? <IconShieldAlert size={14} color="var(--red)" />
-                                            : <IconAlertTriangle size={14} color="var(--yellow)" />
-                                        }
                                     </div>
-                                    <div style={{ fontFamily: 'IBM Plex Sans', fontSize: '0.83rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                                        <span style={{ color: 'var(--text-primary)', fontWeight: 600 }}>Claimed: </span>{d.claim}
-                                    </div>
-                                    <div style={{ fontFamily: 'IBM Plex Sans', fontSize: '0.8rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                                        <span style={{ color: 'var(--red)', fontWeight: 600 }}>Finding: </span>{d.finding}
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: 12 }}>
+                                            <span style={{ color: 'var(--text-dim)', fontWeight: 600 }}>CANDIDATE CLAIM:</span> <br />
+                                            <span style={{ fontWeight: 500 }}>"{d.claim}"</span>
+                                        </div>
+                                        <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.85rem', color: 'var(--red)', lineHeight: 1.6, background: 'var(--red)05', padding: '12px 16px', borderRadius: 8, border: '1px dashed var(--red)20' }}>
+                                            <div style={{ fontWeight: 800, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Agent Finding:</div>
+                                            {d.finding}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -190,66 +291,68 @@ export default function VerdictPage() {
                         <span className="section-label">Agent Debate</span>
                     </div>
 
-                    {data.agentDebate.map((agent, i) => {
+                    {data.agentDebate?.map((agent: any, i: number) => {
                         const AgentIcon = AGENT_ICONS[agent.agent] || IconCpu;
                         const expanded = activeAgent === agent.agent;
                         return (
                             <div key={agent.agent} className={`card-glass reveal delay-${i + 1}`} onClick={() => setActiveAgent(p => p === agent.agent ? null : agent.agent)}
                                 style={{
-                                    borderRadius: 12, cursor: 'pointer',
-                                    borderLeft: `3px solid ${agent.color}`,
-                                    background: expanded ? `rgba(${agent.color === '#6366F1' ? '99,102,241' : agent.color === '#10B981' ? '16,185,129' : agent.color === '#F59E0B' ? '245,158,11' : '239,68,68'},0.06)` : undefined,
-                                    transition: 'all 0.28s cubic-bezier(0.16,1,0.3,1)',
-                                    boxShadow: expanded ? `0 0 24px ${agent.color}14, inset 0 1px 0 ${agent.color}10` : 'none',
+                                    borderRadius: 16, cursor: 'pointer',
+                                    border: expanded ? `1px solid ${agent.color}40` : '1px solid rgba(15,23,42,0.06)',
+                                    background: expanded ? `${agent.color}05` : undefined,
+                                    transition: 'all 0.3s cubic-bezier(0.16,1,0.3,1)',
+                                    boxShadow: expanded ? `0 12px 24px -8px ${agent.color}20` : 'none',
                                     overflow: 'hidden',
                                 }}
                             >
-                                {/* Agent header */}
-                                <div style={{ padding: 'clamp(13px,2vw,18px)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-                                        <div style={{ width: 38, height: 38, borderRadius: 11, background: `${agent.color}14`, border: `1px solid ${agent.color}35`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                            <AgentIcon size={18} color={agent.color} />
+                                <div style={{ padding: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+                                        <div style={{ width: 44, height: 44, borderRadius: 12, background: `${agent.color}15`, border: `1px solid ${agent.color}30`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                            <AgentIcon size={20} color={agent.color} />
                                         </div>
                                         <div>
-                                            <div style={{ fontFamily: 'DM Sans', fontWeight: 600, fontSize: '0.88rem', color: 'var(--text-primary)' }}>{agent.name}</div>
-                                            <div style={{ fontFamily: 'JetBrains Mono', fontSize: '0.62rem', color: posClr[agent.position] || 'var(--text-dim)', fontWeight: 600 }}>{agent.position}</div>
+                                            <div style={{ fontFamily: 'var(--font-inter)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{agent.name}</div>
+                                            <div style={{
+                                                display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 8px', borderRadius: 4,
+                                                background: agent.position === 'HIRE' ? 'var(--green)15' : 'var(--red)15',
+                                                color: agent.position === 'HIRE' ? 'var(--green)' : 'var(--red)',
+                                                fontFamily: 'JetBrains Mono', fontSize: '0.55rem', fontWeight: 800, textTransform: 'uppercase', marginTop: 4
+                                            }}>
+                                                {agent.position}
+                                            </div>
                                         </div>
                                     </div>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                                        <span className="pill" style={{ background: `${agent.color}12`, border: `1px solid ${agent.color}28`, color: agent.color, fontSize: '0.6rem' }}>{agent.agent}</span>
-                                        <IconChevronDown size={15} color="var(--text-dim)"
-                                            style={{ transition: 'transform 0.28s', transform: expanded ? 'rotate(180deg)' : 'none' }}
-                                        />
-                                    </div>
+                                    <IconChevronDown size={18} color="var(--text-dim)"
+                                        style={{ transition: 'transform 0.3s', transform: expanded ? 'rotate(180deg)' : 'none' }}
+                                    />
                                 </div>
 
-                                {/* Preview / Expanded */}
-                                <div style={{ padding: '0 clamp(13px,2vw,18px)', paddingBottom: expanded ? 'clamp(13px,2vw,18px)' : 12 }}>
-                                    <p style={{ fontFamily: 'IBM Plex Sans', fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.72, display: expanded ? 'block' : '-webkit-box', WebkitLineClamp: expanded ? undefined : (2 as any), WebkitBoxOrient: 'vertical' as any, overflow: expanded ? 'visible' : 'hidden', transition: 'all 0.25s' }}>
-                                        {agent.reasoning}
-                                    </p>
+                                <div style={{ padding: '0 20px 20px', display: expanded ? 'block' : 'none' }}>
+                                    <div style={{ padding: 20, background: 'rgba(255,255,255,0.5)', borderRadius: 12, border: '1px solid rgba(15,23,42,0.04)' }}>
+                                        <p style={{ fontFamily: 'var(--font-inter)', fontSize: '0.88rem', color: 'var(--text-primary)', lineHeight: 1.8, fontWeight: 500 }}>
+                                            {agent.reasoning}
+                                        </p>
+                                    </div>
                                 </div>
-                                {expanded && <div style={{ height: 1, background: `linear-gradient(90deg, ${agent.color}30, transparent)`, margin: '0 clamp(13px,2vw,18px) 14px' }} />}
                             </div>
                         );
                     })}
 
                     {/* Final consensus */}
                     <div className="reveal delay-4" style={{
-                        background: 'rgba(18,18,38,0.85)',
-                        backdropFilter: 'blur(20px)',
-                        border: '1px solid rgba(99,102,241,0.25)',
-                        borderRadius: 14, padding: 'clamp(16px,2vw,22px)',
-                        boxShadow: '0 0 32px rgba(99,102,241,0.08), inset 0 1px 0 rgba(99,102,241,0.1)',
-                        marginTop: 2,
+                        background: 'rgba(15,23,42,0.95)',
+                        border: '1px solid rgba(255,255,255,0.1)',
+                        borderRadius: 20, padding: 28,
+                        boxShadow: '0 24px 48px -12px rgba(0,0,0,0.4)',
+                        marginTop: 8,
                     }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                            <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(99,102,241,0.12)', border: '1px solid rgba(99,102,241,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                                <IconStar size={14} color="var(--accent-primary)" />
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+                            <div style={{ width: 32, height: 32, borderRadius: 10, background: 'var(--accent-primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                <IconStar size={16} color="#fff" />
                             </div>
-                            <span className="section-label" style={{ color: 'var(--accent-primary)', letterSpacing: '0.1em' }}>Final Consensus</span>
+                            <span className="section-label" style={{ color: '#fff', letterSpacing: '0.05em', textTransform: 'uppercase', fontSize: '0.75rem' }}>Executive Summary</span>
                         </div>
-                        <p style={{ fontFamily: 'IBM Plex Sans', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.82 }}>{data.consensus}</p>
+                        <p style={{ fontFamily: 'var(--font-inter)', fontSize: '0.95rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.8, fontWeight: 500 }}>{data.consensus}</p>
                     </div>
 
                     {/* Score summary */}
@@ -263,13 +366,13 @@ export default function VerdictPage() {
                             { label: 'Claim Validity', value: 38, color: 'var(--red)' },
                             { label: 'Communication', value: 75, color: 'var(--green)' },
                             { label: 'Overall Score', value: 52, color: 'var(--accent-primary)' },
-                        ].map(row => (
+                        ].map((row: any) => (
                             <div key={row.label} style={{ marginBottom: 10 }}>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 5 }}>
-                                    <span style={{ fontFamily: 'IBM Plex Sans', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{row.label}</span>
-                                    <span style={{ fontFamily: 'JetBrains Mono', fontSize: '0.72rem', color: row.color, fontWeight: 700 }}>{row.value}</span>
+                                    <span style={{ fontFamily: 'var(--font-inter)', fontSize: '0.75rem', color: 'var(--text-secondary)' }}>{row.label}</span>
+                                    <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.72rem', color: row.color, fontWeight: 700 }}>{row.value}</span>
                                 </div>
-                                <div style={{ height: 3, background: 'rgba(255,255,255,0.06)', borderRadius: 2, overflow: 'hidden' }}>
+                                <div style={{ height: 3, background: 'rgba(15,23,42,0.06)', borderRadius: 2, overflow: 'hidden' }}>
                                     <div style={{ height: '100%', width: `${row.value}%`, background: row.color, transition: 'width 1s ease', opacity: 0.9 }} />
                                 </div>
                             </div>

@@ -69,7 +69,7 @@ export default function QuestionRow({ question, isActive, status = 'pending', on
                 {status && (
                     <span
                         style={{
-                            fontFamily: 'IBM Plex Sans, sans-serif',
+                            fontFamily: 'var(--font-inter), sans-serif',
                             fontSize: '0.85rem',
                             color: status === 'completed' ? 'var(--green)' : status === 'active' ? 'var(--accent-primary)' : 'var(--text-dim)',
                             minWidth: '20px',
@@ -132,7 +132,7 @@ export default function QuestionRow({ question, isActive, status = 'pending', on
                 >
                     <p
                         style={{
-                            fontFamily: 'IBM Plex Sans, sans-serif',
+                            fontFamily: 'var(--font-inter), sans-serif',
                             fontSize: '0.85rem',
                             color: 'var(--text-primary)',
                             lineHeight: 1.7,
@@ -153,7 +153,7 @@ export default function QuestionRow({ question, isActive, status = 'pending', on
                         <div
                             style={{
                                 fontSize: '0.68rem',
-                                fontFamily: 'IBM Plex Sans, sans-serif',
+                                fontFamily: 'var(--font-inter), sans-serif',
                                 color: 'var(--accent-primary)',
                                 textTransform: 'uppercase',
                                 letterSpacing: '0.08em',
@@ -165,7 +165,7 @@ export default function QuestionRow({ question, isActive, status = 'pending', on
                         </div>
                         <p
                             style={{
-                                fontFamily: 'IBM Plex Sans, sans-serif',
+                                fontFamily: 'var(--font-inter), sans-serif',
                                 fontSize: '0.8rem',
                                 color: 'var(--text-secondary)',
                                 lineHeight: 1.6,

@@ -5,7 +5,8 @@ from fastapi.responses import StreamingResponse
 from app.core.llm_client import LLMClient
 from app.agents.evaluator_agent import EvaluatorAgent
 from app.agents.verdict_agent import VerdictAgent
-from app.models.schemas import EvaluateAnswerResponse, VerdictResponse, ResumeAnalysisResponse
+from app.agents.speaker_agent import SpeakerAgent
+from app.models.schemas import EvaluateAnswerResponse, VerdictResponse, ResumeAnalysisResponse, IdentifySpeakerResponse
 from app.core.logging import get_logger
 
 logger = get_logger(__name__)
@@ -15,6 +16,16 @@ class InterviewService:
         self.llm_client = llm_client
         self.evaluator_agent = EvaluatorAgent(llm_client)
         self.verdict_agent = VerdictAgent(llm_client)
+        self.speaker_agent = SpeakerAgent(llm_client)
+
+    async def identify_speaker(self, utterance: str, transcript: list) -> IdentifySpeakerResponse:
+        """
+        Calls SpeakerAgent to determine role of speaker.
+        """
+        result = await self.speaker_agent.identify_speaker(utterance, transcript)
+        if not result:
+            raise ValueError("Failed to identify speaker.")
+        return IdentifySpeakerResponse(**result)
 
     async def evaluate_answer(
         self, question: str, transcript: list, resume_claims: list

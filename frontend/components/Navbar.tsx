@@ -17,13 +17,13 @@ export default function Navbar() {
     return (
         <nav style={{
             position: 'sticky', top: 0, zIndex: 100, height: 56,
-            background: 'rgba(8, 8, 12, 0.88)',
+            background: 'rgba(248,250,252, 0.88)',
             backdropFilter: 'blur(24px) saturate(140%)',
             WebkitBackdropFilter: 'blur(24px) saturate(140%)',
-            borderBottom: '1px solid rgba(255,255,255,0.05)',
+            borderBottom: '1px solid rgba(15,23,42,0.05)',
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             padding: '0 22px',
-            boxShadow: '0 1px 0 rgba(255,255,255,0.03), 0 4px 24px rgba(0,0,0,0.3)',
+            boxShadow: '0 1px 0 rgba(15,23,42,0.03), 0 4px 24px rgba(0,0,0,0.3)',
         }}>
 
             {/* Logo */}
@@ -40,8 +40,8 @@ export default function Navbar() {
                     </svg>
                 </div>
                 <div>
-                    <span style={{ fontFamily: 'DM Sans', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>TrueHire</span>
-                    <span style={{ fontFamily: 'IBM Plex Sans', fontWeight: 400, fontSize: '0.72rem', color: 'var(--accent-primary)', marginLeft: 5, letterSpacing: '0.04em' }}>by DataVex</span>
+                    <span style={{ fontFamily: 'var(--font-inter)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>TrueHire</span>
+                    <span style={{ fontFamily: 'var(--font-inter)', fontWeight: 400, fontSize: '0.72rem', color: 'var(--accent-primary)', marginLeft: 5, letterSpacing: '0.04em' }}>by DataVex</span>
                 </div>
             </div>
 
@@ -66,8 +66,8 @@ export default function Navbar() {
                                     width: 20, height: 20, borderRadius: '50%',
                                     background: isActive
                                         ? 'linear-gradient(135deg, var(--accent-primary), var(--accent-secondary))'
-                                        : isDone ? 'rgba(16,185,129,0.15)' : 'rgba(255,255,255,0.05)',
-                                    border: `1px solid ${isActive ? 'transparent' : isDone ? 'rgba(16,185,129,0.35)' : 'rgba(255,255,255,0.08)'}`,
+                                        : isDone ? 'rgba(16,185,129,0.15)' : 'rgba(15,23,42,0.05)',
+                                    border: `1px solid ${isActive ? 'transparent' : isDone ? 'rgba(16,185,129,0.35)' : 'rgba(15,23,42,0.08)'}`,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0,
                                     boxShadow: isActive ? '0 0 10px rgba(99,102,241,0.4)' : 'none',
                                     transition: 'all 0.25s',
@@ -79,7 +79,7 @@ export default function Navbar() {
                                     />
                                 </div>
                                 <span style={{
-                                    fontFamily: 'IBM Plex Sans', fontWeight: isActive ? 600 : 400, fontSize: '0.8rem',
+                                    fontFamily: 'var(--font-inter)', fontWeight: isActive ? 600 : 400, fontSize: '0.8rem',
                                     color: isActive ? 'var(--text-primary)' : isDone ? 'var(--green)' : 'var(--text-dim)',
                                     transition: 'color 0.25s',
                                 }}>{step.label}</span>
@@ -88,7 +88,7 @@ export default function Navbar() {
                             {i < steps.length - 1 && (
                                 <div style={{
                                     width: 24, height: 1,
-                                    background: isDone ? 'linear-gradient(90deg, var(--green), rgba(16,185,129,0.3))' : 'rgba(255,255,255,0.07)',
+                                    background: isDone ? 'linear-gradient(90deg, var(--green), rgba(16,185,129,0.3))' : 'rgba(15,23,42,0.07)',
                                     borderRadius: 1, transition: 'background 0.3s',
                                     flexShrink: 0,
                                 }} />
@@ -115,7 +115,7 @@ export default function Navbar() {
                     boxShadow: '0 0 12px rgba(99,102,241,0.3)',
                     border: '1.5px solid rgba(99,102,241,0.3)',
                 }}>
-                    <IconUser size={15} color="rgba(255,255,255,0.9)" />
+                    <IconUser size={15} color="rgba(15,23,42,0.9)" />
                 </div>
             </div>
         </nav>
