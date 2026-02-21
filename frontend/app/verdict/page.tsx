@@ -128,7 +128,7 @@ export default function VerdictPage() {
         </div>
     );
 
-    const isHire = data.verdict === 'HIRE';
+    const isHire = data.verdict?.startsWith('HIRE');
     const vColor = isHire ? 'var(--green)' : 'var(--red)';
     const vGlow = isHire ? 'rgba(16,185,129,0.18)' : 'rgba(239,68,68,0.18)';
     const heatClr: Record<string, string> = { HIGH: 'var(--green)', MEDIUM: 'var(--yellow)', LOW: 'var(--red)' };
@@ -314,8 +314,8 @@ export default function VerdictPage() {
                                             <div style={{ fontFamily: 'var(--font-inter)', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>{agent.name}</div>
                                             <div style={{
                                                 display: 'inline-flex', alignItems: 'center', gap: 5, padding: '2px 8px', borderRadius: 4,
-                                                background: agent.position === 'HIRE' ? 'var(--green)15' : 'var(--red)15',
-                                                color: agent.position === 'HIRE' ? 'var(--green)' : 'var(--red)',
+                                                background: agent.position?.startsWith('HIRE') ? 'var(--green)15' : 'var(--red)15',
+                                                color: agent.position?.startsWith('HIRE') ? 'var(--green)' : 'var(--red)',
                                                 fontFamily: 'JetBrains Mono', fontSize: '0.55rem', fontWeight: 800, textTransform: 'uppercase', marginTop: 4
                                             }}>
                                                 {agent.position}

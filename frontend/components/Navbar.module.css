@@ -1,0 +1,82 @@
+.navbarWrapper {
+    position: absolute;
+    top: 32px;
+    left: 0;
+    right: 0;
+    z-index: 100;
+    display: flex;
+    justify-content: center;
+    padding: 0 32px;
+}
+
+.navbarPill {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 100px;
+    height: 64px;
+    max-width: 1100px;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px 0 32px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+}
+
+.logo {
+    font-family: var(--font-heading);
+    font-size: 24px;
+    font-weight: 700;
+    color: #000000;
+    text-decoration: none;
+    letter-spacing: -0.04em;
+}
+
+.linksSection {
+    display: flex;
+    gap: 40px;
+}
+
+.navLink {
+    font-family: var(--font-base);
+    font-size: 15px;
+    font-weight: 500;
+    color: rgba(0, 0, 0, 0.6);
+    text-decoration: none;
+    transition: color 0.2s ease;
+}
+
+.navLink:hover {
+    color: #000000;
+}
+
+.navCta {
+    background: #000000;
+    color: #FFFFFF;
+    height: 40px;
+    padding: 0 24px;
+    border-radius: 100px;
+    display: flex;
+    align-items: center;
+    font-family: var(--font-base);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: transform 0.2s ease;
+}
+
+.navCta:hover {
+    transform: scale(1.05);
+}
+
+@media (max-width: 900px) {
+    .linksSection {
+        display: none;
+    }
+
+    .navbarPill {
+        padding: 0 8px 0 24px;
+    }
+}

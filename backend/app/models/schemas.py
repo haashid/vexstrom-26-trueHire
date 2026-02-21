@@ -42,6 +42,12 @@ class TranscriptMessage(BaseModel):
     role: str = Field(..., description="Either 'interviewer' or 'candidate'")
     content: str = Field(..., description="The spoken text")
 
+class TranscriptPacket(BaseModel):
+    speaker: str = Field(..., description="The name of the speaker")
+    text: str = Field(..., description="The content of the speech")
+    timestamp: int = Field(..., description="Epoch timestamp in milliseconds")
+    sessionId: Optional[str] = Field(None, description="Optional session or meeting ID")
+
 class EvaluateAnswerRequest(BaseModel):
     question: str = Field(..., description="The core technical question being addressed.")
     transcript: List[TranscriptMessage] = Field(..., description="The running conversational history of the candidate answering.")

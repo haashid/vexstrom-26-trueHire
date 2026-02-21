@@ -166,6 +166,10 @@ export default function InterviewPage() {
     const isEvaluatingRef = useRef(false);
     const transcriptRef = useRef<any[]>([]);
     const lastSpeakerRef = useRef<Speaker>('Panelist');
+    const detectedQIdRef = useRef<string | null>(null);
+    const allQRef = useRef<any[]>([]);
+    const dataRef = useRef<any>(null);
+    const autoSwitchRef = useRef(true);
 
     const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
     const progress = allQ.length > 0 ? Math.round((Object.keys(evaluations).length / allQ.length) * 100) : 0;
@@ -175,7 +179,10 @@ export default function InterviewPage() {
         if (stored) {
             const parsed = JSON.parse(stored);
             setData(parsed);
-            setAllQ(parsed.questionBank.flatMap((g: any) => g.questions));
+            dataRef.current = parsed;
+            const qs = parsed.questionBank.flatMap((g: any) => g.questions);
+            setAllQ(qs);
+            allQRef.current = qs;
         } else {
             router.push('/');
         }
@@ -188,6 +195,8 @@ export default function InterviewPage() {
     useEffect(() => () => { recognitionRef.current?.stop(); if (timerRef.current) clearInterval(timerRef.current); }, []);
     useEffect(() => { agentRef.current = agentOn; }, [agentOn]);
     useEffect(() => { speakerRef.current = currentSpeaker; }, [currentSpeaker]);
+    useEffect(() => { autoSwitchRef.current = autoSwitch; }, [autoSwitch]);
+    useEffect(() => { detectedQIdRef.current = detectedQId; }, [detectedQId]);
 
     const secsRef = useRef(secs);
     useEffect(() => { secsRef.current = secs; }, [secs]);
@@ -195,11 +204,14 @@ export default function InterviewPage() {
 
     const processUtterance = useCallback(async (text: string, speaker: Speaker, ts: string) => {
         let activeSpeaker = speaker;
+        const currentData = dataRef.current;
+        const currentAllQ = allQRef.current;
+        const activeQId = detectedQIdRef.current;
 
         // Auto-switch speaker using backend intelligence
-        if (autoSwitch) {
+        if (autoSwitchRef.current) {
             try {
-                const history = transcript.slice(-5).map(e => ({
+                const history = transcriptRef.current.slice(-5).map(e => ({
                     role: e.speaker === 'Panelist' ? 'interviewer' : 'candidate',
                     content: e.text
                 }));
@@ -217,11 +229,12 @@ export default function InterviewPage() {
         lastSpeakerRef.current = activeSpeaker;
 
         const lower = text.toLowerCase();
-        const det = detectQuestion(lower, allQ);
-        let dQId = detectedQId;
+        const det = detectQuestion(lower, currentAllQ);
+        let dQId = activeQId;
         if (det) {
             dQId = det.id;
             setDetectedQId(det.id);
+            detectedQIdRef.current = det.id;
             setDetectedConf(det.confidence);
             setNextQIndex(det.index + 1); // Suggest next one
             setFollowUps([]); // Reset follow ups when a new main question is detected
@@ -243,12 +256,17 @@ export default function InterviewPage() {
         transcriptRef.current = updatedHistory;
 
         // EVALUATION LOGIC
-        if (dQId) {
+        // We evaluate the question that the candidate was ALREADY answering.
+        // If the Panelist just asked a new question (detected as dQId), 
+        // we should still evaluate the PREVIOUS active question for the candidate's last words.
+        const qIdToEvaluate = (activeSpeaker === 'Panelist' && prevSpeaker === 'Candidate') ? activeQId : dQId;
+
+        if (qIdToEvaluate) {
             if (activeSpeaker === 'Candidate') {
-                candidateBuf.current[dQId] = (candidateBuf.current[dQId] || '') + ' ' + text;
+                candidateBuf.current[qIdToEvaluate] = (candidateBuf.current[qIdToEvaluate] || '') + ' ' + text;
             }
 
-            const combined = candidateBuf.current[dQId] || '';
+            const combined = candidateBuf.current[qIdToEvaluate] || '';
             const wordCount = combined.trim().split(/\s+/).length;
 
             // Trigger 1: Word Count Threshold (15 words)
@@ -258,7 +276,7 @@ export default function InterviewPage() {
 
             if (shouldEvaluate && !isEvaluatingRef.current) {
                 try {
-                    const currentQ = allQ.find(q => q.id === dQId);
+                    const currentQ = currentAllQ.find((q: any) => q.id === qIdToEvaluate);
                     const history = updatedHistory.map(e => ({
                         role: e.speaker === 'Panelist' ? 'interviewer' : 'candidate',
                         content: e.text
@@ -270,7 +288,7 @@ export default function InterviewPage() {
                     const evalResult = await evaluateAnswer({
                         question: currentQ?.full || '',
                         transcript: history,
-                        resume_claims: data.redFlags.map((rf: any) => rf.claim)
+                        resume_claims: currentData.redFlags.map((rf: any) => rf.claim)
                     });
 
                     if (evalResult.contradiction_flag) {
@@ -288,7 +306,7 @@ export default function InterviewPage() {
 
                     setEvaluations(p => ({
                         ...p,
-                        [dQId!]: {
+                        [qIdToEvaluate!]: {
                             score: Math.round(evalResult.depth_score * 10),
                             label: evalResult.label,
                             bluff: evalResult.bluff_likelihood > 0.6 ? 'HIGH' : evalResult.bluff_likelihood > 0.3 ? 'MEDIUM' : 'LOW',
@@ -307,7 +325,7 @@ export default function InterviewPage() {
                 }
             }
         }
-    }, [allQ, detectedQId, data]);
+    }, []); // No dependencies - uses Refs for all living state
 
     const toggleAgent = useCallback(() => {
         if (agentOn) {
@@ -354,6 +372,53 @@ export default function InterviewPage() {
             timerRef.current = setInterval(() => setSecs(s => s + 1), 1000);
         }
     }, [agentOn, processUtterance, autoSwitch, transcript]);
+
+    // Extension bridge WebSocket connection
+    useEffect(() => {
+        let ws: WebSocket | null = null;
+        let reconnectTimeout: ReturnType<typeof setTimeout>;
+
+        const connect = () => {
+            console.log("[Extension Bridge] Connecting to WebSocket...");
+            ws = new WebSocket('ws://localhost:8000/api/v1/ws/transcript');
+
+            ws.onopen = () => console.log("[Extension Bridge] Connected");
+
+            ws.onmessage = (event) => {
+                try {
+                    const data = JSON.parse(event.data);
+                    if (data.type === 'transcript') {
+                        console.log("[Extension Bridge] Received:", data.text);
+                        // Convert role to frontend expected 'Panelist' | 'Candidate'
+                        // If speaker detection is unreliable, we default to the current selector
+                        const role = data.speaker.toLowerCase().includes('candidate') ? 'Candidate' :
+                            data.speaker.toLowerCase().includes('you') ? 'Candidate' : 'Panelist';
+
+                        processUtterance(data.text, role, fmt(secsRef.current));
+                    }
+                } catch (err) {
+                    console.error("[Extension Bridge] Error processing message:", err);
+                }
+            };
+
+            ws.onclose = () => {
+                console.log("[Extension Bridge] Disconnected. Reconnecting in 3s...");
+                reconnectTimeout = setTimeout(connect, 3000);
+            };
+
+            ws.onerror = (err) => {
+                console.error("[Extension Bridge] WebSocket Error:", err);
+                ws?.close();
+            };
+        };
+
+        connect();
+
+        return () => {
+            ws?.close();
+            clearTimeout(reconnectTimeout);
+        };
+    }, [processUtterance]);
 
     const detectedQ = allQ.find((q: any) => q.id === detectedQId);
     const latestEval = detectedQId ? evaluations[detectedQId] : null;

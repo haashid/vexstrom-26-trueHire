@@ -9,6 +9,7 @@ import {
   IconCpu, IconZap, IconTarget, IconShield,
   IconArrowRight, IconCheckCircle, IconAlertCircle,
 } from '@/components/Icons';
+import Hero from '@/components/Hero';
 
 const STATUS_LINES = [
   'Parsing documents...',
@@ -265,106 +266,85 @@ export default function UploadPage() {
   };
 
   return (
-    <div style={{ maxWidth: 1040, margin: '0 auto', padding: 'clamp(36px,7vh,64px) clamp(16px,4vw,36px) 80px' }}>
+    <main style={{ background: 'var(--bg-primary)' }}>
+      <Hero />
 
-      {/* ── HERO */}
-      <div style={{ textAlign: 'center', marginBottom: 'clamp(48px, 8vh, 64px)', paddingTop: '40px' }}>
-        <h1 className="reveal delay-1" style={{ fontFamily: 'var(--font-inter)', fontWeight: 800, fontSize: 'clamp(2.2rem, 5vw, 3.5rem)', color: 'var(--text-primary)', letterSpacing: '-0.04em', lineHeight: 1.1, marginBottom: 16 }}>
-          AI-Driven Candidate <span style={{ color: 'var(--accent-primary)' }}>Integrity Analysis.</span>
-        </h1>
-        <p className="reveal delay-2" style={{ fontFamily: 'var(--font-inter)', fontWeight: 400, fontSize: 'clamp(1.1rem, 2vw, 1.3rem)', color: 'var(--text-secondary)', marginBottom: 16, maxWidth: 600, margin: '0 auto 16px' }}>
-          Uncover the truth behind every claim with our multi-agent interview orchestration engine.
-        </p>
-        <div className="reveal delay-3" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-          <div style={{ height: 1, width: 40, background: 'var(--border)' }} />
-          <p style={{ fontFamily: 'var(--font-inter)', fontSize: '0.85rem', color: 'var(--text-dim)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.1em' }}>Secure & Enterprise Ready</p>
-          <div style={{ height: 1, width: 40, background: 'var(--border)' }} />
-        </div>
-      </div>
+      <div id="upload" style={{ maxWidth: 1040, margin: '0 auto', padding: 'clamp(36px,7vh,64px) clamp(16px,4vw,36px) 80px' }}>
 
-      {/* ── STATS */}
-      <div className="reveal delay-2" style={{ display: 'flex', justifyContent: 'center', gap: 'clamp(24px,5vw,56px)', flexWrap: 'wrap', marginBottom: 44 }}>
-        {[{ v: '4', l: 'AI Agents' }, { v: '<2s', l: 'Analysis Time' }, { v: '94%', l: 'Accuracy' }, { v: '12k+', l: 'Interviews' }].map(s => (
-          <div key={s.l} style={{ textAlign: 'center' }}>
-            <div style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, fontSize: 'clamp(1.1rem,2vw,1.5rem)', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>{s.v}</div>
-            <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>{s.l}</div>
+        {/* ── UPLOAD GRID */}
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,440px),1fr))', gap: 20, marginBottom: 20 }}>
+          <div className="reveal-left">
+            <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <IconFile size={15} color="var(--text-dim)" /> Candidate Resume
+            </div>
+            <FileUploadCard label="Resume" icon={IconFile} description="Upload the candidate's CV or resume (PDF only)" accept=".pdf" fileState={resume} onFile={setResume} disabled={loading} />
           </div>
-        ))}
-      </div>
-
-      {/* ── UPLOAD GRID */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,440px),1fr))', gap: 20, marginBottom: 20 }}>
-        <div className="reveal-left">
-          <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <IconFile size={15} color="var(--text-dim)" /> Candidate Resume
+          <div className="reveal-right">
+            <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <IconBriefcase size={15} color="var(--text-dim)" /> Job Description
+            </div>
+            <FileUploadCard label="Job Description" icon={IconBriefcase} description="Upload the full job requirements document (PDF only)" accept=".pdf" fileState={jd} onFile={setJd} disabled={loading} />
           </div>
-          <FileUploadCard label="Resume" icon={IconFile} description="Upload the candidate's CV or resume (PDF only)" accept=".pdf" fileState={resume} onFile={setResume} disabled={loading} />
         </div>
-        <div className="reveal-right">
-          <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <IconBriefcase size={15} color="var(--text-dim)" /> Job Description
+
+        {/* Status hint */}
+        {!loading && (
+          <p className="animate-fade-in" style={{ textAlign: 'center', fontFamily: 'var(--font-inter)', fontSize: '0.85rem', color: !resume || !jd ? 'var(--text-secondary)' : 'var(--green)', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
+            {!resume && !jd && 'Upload both files to enable analysis'}
+            {resume && !jd && <><IconAlertCircle size={16} color="var(--yellow)" /> Resume loaded — upload the job description</>}
+            {!resume && jd && <><IconAlertCircle size={16} color="var(--yellow)" /> Job description loaded — upload the resume</>}
+            {resume && jd && <><IconCheckCircle size={16} color="var(--green)" /> Both files ready — run analysis</>}
+          </p>
+        )}
+
+        {/* ── CTA */}
+        <div className="reveal delay-1">
+          <button className="btn-accent" disabled={!canSubmit} onClick={handleRun}
+            style={{ width: '100%', padding: 'clamp(14px,2vh,18px) 32px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+            {loading
+              ? <><span className="animate-spin" style={{ width: 16, height: 16, border: '2px solid rgba(15,23,42,0.2)', borderTop: '2px solid var(--accent-primary)', borderRadius: '50%', display: 'inline-block' }} />Analyzing...</>
+              : <><span>Run Pre-Interview Analysis</span><IconArrowRight size={17} color="var(--text-primary)" /></>
+            }
+          </button>
+
+          {/* Status log */}
+          {lines.length > 0 && (
+            <div style={{ marginTop: 18, padding: '18px 20px', background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(16px)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 9 }}>
+              {lines.map((l, i) => (
+                <div key={i} className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'JetBrains Mono', fontSize: '0.75rem', color: i === lines.length - 1 ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
+                  {doneLines[i]
+                    ? <IconCheckCircle size={14} color="var(--green)" />
+                    : i === lines.length - 1
+                      ? <span className="animate-spin" style={{ width: 13, height: 13, border: '1.5px solid rgba(99,102,241,0.3)', borderTop: '1.5px solid var(--accent-primary)', borderRadius: '50%', display: 'inline-block', flexShrink: 0 }} />
+                      : <div style={{ width: 13, height: 13 }} />
+                  }
+                  {l}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* ── HOW IT WORKS */}
+        <div id="features" style={{ marginTop: 'clamp(60px,10vh,96px)' }}>
+          <div className="divider" style={{ marginBottom: 48 }} />
+          <div className="reveal" style={{ textAlign: 'center', marginBottom: 36 }}>
+            <h2 style={{ fontFamily: 'var(--font-inter)', fontWeight: 600, fontSize: 'clamp(1.2rem,3vw,1.5rem)', color: 'var(--text-primary)' }}>Analysis Pipeline</h2>
           </div>
-          <FileUploadCard label="Job Description" icon={IconBriefcase} description="Upload the full job requirements document (PDF only)" accept=".pdf" fileState={jd} onFile={setJd} disabled={loading} />
-        </div>
-      </div>
-
-      {/* Status hint */}
-      {!loading && (
-        <p className="animate-fade-in" style={{ textAlign: 'center', fontFamily: 'var(--font-inter)', fontSize: '0.85rem', color: !resume || !jd ? 'var(--text-secondary)' : 'var(--green)', marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6 }}>
-          {!resume && !jd && 'Upload both files to enable analysis'}
-          {resume && !jd && <><IconAlertCircle size={16} color="var(--yellow)" /> Resume loaded — upload the job description</>}
-          {!resume && jd && <><IconAlertCircle size={16} color="var(--yellow)" /> Job description loaded — upload the resume</>}
-          {resume && jd && <><IconCheckCircle size={16} color="var(--green)" /> Both files ready — run analysis</>}
-        </p>
-      )}
-
-      {/* ── CTA */}
-      <div className="reveal delay-1">
-        <button className="btn-accent" disabled={!canSubmit} onClick={handleRun}
-          style={{ width: '100%', padding: 'clamp(14px,2vh,18px) 32px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
-          {loading
-            ? <><span className="animate-spin" style={{ width: 16, height: 16, border: '2px solid rgba(15,23,42,0.2)', borderTop: '2px solid var(--accent-primary)', borderRadius: '50%', display: 'inline-block' }} />Analyzing...</>
-            : <><span>Run Pre-Interview Analysis</span><IconArrowRight size={17} color="var(--text-primary)" /></>
-          }
-        </button>
-
-        {/* Status log */}
-        {lines.length > 0 && (
-          <div style={{ marginTop: 18, padding: '18px 20px', background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(16px)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 9 }}>
-            {lines.map((l, i) => (
-              <div key={i} className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'JetBrains Mono', fontSize: '0.75rem', color: i === lines.length - 1 ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
-                {doneLines[i]
-                  ? <IconCheckCircle size={14} color="var(--green)" />
-                  : i === lines.length - 1
-                    ? <span className="animate-spin" style={{ width: 13, height: 13, border: '1.5px solid rgba(99,102,241,0.3)', borderTop: '1.5px solid var(--accent-primary)', borderRadius: '50%', display: 'inline-block', flexShrink: 0 }} />
-                    : <div style={{ width: 13, height: 13 }} />
-                }
-                {l}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,210px),1fr))', gap: 14 }}>
+            {AGENT_CARDS.map((item, i) => (
+              <div key={item.n} className={`card-glass reveal delay-${i + 1}`} style={{ padding: 'clamp(16px,2.5vw,20px)', position: 'relative', overflow: 'hidden' }}>
+                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: 12 }}>{item.n}</div>
+                <div style={{ width: 40, height: 40, borderRadius: 6, background: 'var(--bg-primary)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
+                  <item.Icon size={18} color="var(--text-secondary)" />
+                </div>
+                <div style={{ fontFamily: 'var(--font-inter)', fontWeight: 600, fontSize: '0.95rem', marginBottom: 6, color: 'var(--text-primary)' }}>{item.title}</div>
+                <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{item.desc}</div>
               </div>
             ))}
           </div>
-        )}
-      </div>
-
-      {/* ── HOW IT WORKS */}
-      <div style={{ marginTop: 'clamp(60px,10vh,96px)' }}>
-        <div className="divider" style={{ marginBottom: 48 }} />
-        <div className="reveal" style={{ textAlign: 'center', marginBottom: 36 }}>
-          <h2 style={{ fontFamily: 'var(--font-inter)', fontWeight: 600, fontSize: 'clamp(1.2rem,3vw,1.5rem)', color: 'var(--text-primary)' }}>Analysis Pipeline</h2>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,210px),1fr))', gap: 14 }}>
-          {AGENT_CARDS.map((item, i) => (
-            <div key={item.n} className={`card-glass reveal delay-${i + 1}`} style={{ padding: 'clamp(16px,2.5vw,20px)', position: 'relative', overflow: 'hidden' }}>
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: 12 }}>{item.n}</div>
-              <div style={{ width: 40, height: 40, borderRadius: 6, background: 'var(--bg-primary)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-                <item.Icon size={18} color="var(--text-secondary)" />
-              </div>
-              <div style={{ fontFamily: 'var(--font-inter)', fontWeight: 600, fontSize: '0.95rem', marginBottom: 6, color: 'var(--text-primary)' }}>{item.title}</div>
-              <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{item.desc}</div>
-            </div>
-          ))}
         </div>
       </div>
-    </div>
+    </main>
   );
 }

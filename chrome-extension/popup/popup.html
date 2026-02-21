@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>AI Interview Bridge</h1>
+      <div id="status-badge" class="badge idle">IDLE</div>
+    </header>
+
+    <main>
+      <section class="control-group">
+        <label class="switch">
+          <input type="checkbox" id="capture-toggle">
+          <span class="slider round"></span>
+        </label>
+        <span class="label-text">Enable Caption Capture</span>
+      </section>
+
+      <section class="status-info">
+        <div class="info-row">
+          <span class="label">Meeting:</span>
+          <span id="meet-status" class="value detect-no">Not Detected</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Backend:</span>
+          <span id="backend-status" class="value status-ok">Connected</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Captions:</span>
+          <span id="caption-status" class="value detect-no">Not Detected</span>
+        </div>
+      </section>
+
+      <section class="transcript-preview">
+        <label>Last Captured Line:</label>
+        <div id="last-line" class="preview-box">Waiting for captions...</div>
+      </section>
+
+      <section class="settings">
+        <label for="api-url">Backend API URL:</label>
+        <input type="text" id="api-url" placeholder="http://localhost:8000/api/v1/transcript">
+        <div class="button-row">
+            <button id="save-settings" class="btn-primary">Save</button>
+            <button id="test-bridge" class="btn-secondary">Test Bridge</button>
+        </div>
+      </section>
+    </main>
+
+    <footer>
+      <p>AI Interview Caption Bridge v1.0</p>
+    </footer>
+  </div>
+  <script src="popup.js"></script>
+</body>
+</html>

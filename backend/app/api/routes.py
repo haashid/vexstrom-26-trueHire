@@ -12,7 +12,8 @@ from app.models.schemas import (
     VerdictRequest,
     VerdictResponse,
     IdentifySpeakerRequest,
-    IdentifySpeakerResponse
+    IdentifySpeakerResponse,
+    TranscriptPacket
 )
 
 router = APIRouter()
@@ -114,3 +115,40 @@ async def generate_final_verdict(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error resolving verdict.")
+
+from app.core.socket_manager import manager
+from fastapi import WebSocket
+
+@router.post("/transcript", status_code=status.HTTP_200_OK)
+async def receive_transcript(request: TranscriptPacket):
+    """
+    Receives live transcript packets from the Chrome extension.
+    Broadcasts them to any connected frontend clients.
+    """
+    packet = {
+        "speaker": request.speaker,
+        "text": request.text,
+        "timestamp": request.timestamp,
+        "type": "transcript"
+    }
+    
+    # Log it
+    print(f"[Extension -> Backend] {request.speaker}: {request.text}")
+    
+    # Broadcast to frontend
+    await manager.broadcast(packet)
+    
+    return {"status": "ok", "timestamp": request.timestamp}
+
+@router.websocket("/ws/transcript")
+async def websocket_transcript(websocket: WebSocket):
+    """
+    WebSocket endpoint for the frontend to receive real-time updates.
+    """
+    await manager.connect(websocket)
+    try:
+        while True:
+            # Keep connection open
+            await websocket.receive_text()
+    except Exception:
+        manager.disconnect(websocket)

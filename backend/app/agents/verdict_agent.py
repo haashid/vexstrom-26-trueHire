@@ -13,27 +13,32 @@ class VerdictAgent:
     
     Your deliverable is a firm hiring verdict with an analytical reasoning trace and a percentage confidence score.
     
+    Verdict Categories:
+    - HIRE (STRONG): Outstanding candidate, exceeds technical bar, no flags.
+    - HIRE (RELIABLE): Meets requirements, solid technical grasp.
+    - NO-HIRE (BORDERLINE): Inconsistent technical depth, missing key signals.
+    - NO-HIRE (RISK): Major technical gaps, inconsistencies, or integrity issues.
+    
     Output strictly in the following JSON format:
     {
-      "verdict": "Strong Hire | Hire | Leaning Hire | Leaning No-Hire | No-Hire",
-      "confidence": 85,
+      "verdict": "HIRE (STRONG) | HIRE (RELIABLE) | NO-HIRE (BORDERLINE) | NO-HIRE (RISK)",
+      "confidence": int (0-100),
       "reasoning_trace": [
-        "Analyzed resume matching 80% of core JD.",
-        "Detected strong grasp in Tier 2 backend questions.",
-        "Candidate bluffed faintly on Kubernetes but recovered in system design."
+        "Analyzed resume matching...",
+        "Detected strong grasp in...",
+        "Candidate bluffed on..."
       ],
       "skill_heatmap": {
-        "Python": 8,
-        "System Design": 6
+        "SkillName": int (1-10)
       },
       "discrepancy_log": [
         {
-          "claim": "Expert in K8s",
-          "contradiction": "Failed basic pod lifecycle question.",
-          "severity": "Medium"
+          "claim": str,
+          "contradiction": str,
+          "severity": "Low | Medium | High"
         }
       ],
-      "summary": "..."
+      "summary": "Crisp executive summary explaining the final recommendation."
     }
     """
 
