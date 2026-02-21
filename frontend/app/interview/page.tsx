@@ -163,6 +163,9 @@ export default function InterviewPage() {
     useScrollReveal([data, transcript, followUps]);
 
     const candidateBuf = useRef<Record<string, string>>({});
+    const isEvaluatingRef = useRef(false);
+    const transcriptRef = useRef<any[]>([]);
+    const lastSpeakerRef = useRef<Speaker>('Panelist');
 
     const fmt = (s: number) => `${String(Math.floor(s / 60)).padStart(2, '0')}:${String(s % 60).padStart(2, '0')}`;
     const progress = allQ.length > 0 ? Math.round((Object.keys(evaluations).length / allQ.length) * 100) : 0;
@@ -188,6 +191,7 @@ export default function InterviewPage() {
 
     const secsRef = useRef(secs);
     useEffect(() => { secsRef.current = secs; }, [secs]);
+    useEffect(() => { transcriptRef.current = transcript; }, [transcript]);
 
     const processUtterance = useCallback(async (text: string, speaker: Speaker, ts: string) => {
         let activeSpeaker = speaker;
@@ -208,6 +212,9 @@ export default function InterviewPage() {
                 console.warn("Auto-speaker identification failed, falling back to manual selection.", err);
             }
         }
+
+        const prevSpeaker = lastSpeakerRef.current;
+        lastSpeakerRef.current = activeSpeaker;
 
         const lower = text.toLowerCase();
         const det = detectQuestion(lower, allQ);
@@ -231,23 +238,35 @@ export default function InterviewPage() {
             flagged: false,
         };
 
-        setTranscript(p => [...p, newEntry]);
+        const updatedHistory = [...transcriptRef.current, newEntry];
+        setTranscript(updatedHistory);
+        transcriptRef.current = updatedHistory;
 
-        if (activeSpeaker === 'Candidate' && dQId) {
-            candidateBuf.current[dQId] = (candidateBuf.current[dQId] || '') + ' ' + text;
-            const combined = candidateBuf.current[dQId];
+        // EVALUATION LOGIC
+        if (dQId) {
+            if (activeSpeaker === 'Candidate') {
+                candidateBuf.current[dQId] = (candidateBuf.current[dQId] || '') + ' ' + text;
+            }
 
-            // Only trigger evaluation if we have enough context (30+ words) and aren't already evaluating
+            const combined = candidateBuf.current[dQId] || '';
             const wordCount = combined.trim().split(/\s+/).length;
-            if (wordCount >= 30 && !isEvaluating) {
+
+            // Trigger 1: Word Count Threshold (15 words)
+            // Trigger 2: Speaker Switch (Candidate finished speaking)
+            const shouldEvaluate = (activeSpeaker === 'Candidate' && wordCount >= 15) ||
+                (activeSpeaker === 'Panelist' && prevSpeaker === 'Candidate' && wordCount > 0);
+
+            if (shouldEvaluate && !isEvaluatingRef.current) {
                 try {
                     const currentQ = allQ.find(q => q.id === dQId);
-                    const history = [...transcript, newEntry].map(e => ({
+                    const history = updatedHistory.map(e => ({
                         role: e.speaker === 'Panelist' ? 'interviewer' : 'candidate',
                         content: e.text
                     }));
 
                     setIsEvaluating(true);
+                    isEvaluatingRef.current = true;
+
                     const evalResult = await evaluateAnswer({
                         question: currentQ?.full || '',
                         transcript: history,
@@ -284,10 +303,11 @@ export default function InterviewPage() {
                     console.error("Evaluation failed", err);
                 } finally {
                     setIsEvaluating(false);
+                    isEvaluatingRef.current = false;
                 }
             }
         }
-    }, [allQ, detectedQId, transcript, data]);
+    }, [allQ, detectedQId, data]);
 
     const toggleAgent = useCallback(() => {
         if (agentOn) {
