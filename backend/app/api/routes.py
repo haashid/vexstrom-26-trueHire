@@ -15,6 +15,7 @@ from app.models.schemas import (
     IdentifySpeakerResponse,
     TranscriptPacket
 )
+from pydantic import BaseModel
 
 router = APIRouter()
 
@@ -115,6 +116,40 @@ async def generate_final_verdict(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error resolving verdict.")
+
+from app.services.email_service import EmailService
+
+def get_email_service() -> EmailService:
+    return EmailService()
+
+class SendReportRequestSchema(BaseModel):
+    to_email: str
+    candidate_name: str
+    job_title: str
+    verdict: str
+    primary_reason: str
+    salary_estimate: str
+
+@router.post("/send-report", status_code=status.HTTP_200_OK)
+async def send_verdict_report(
+    request: SendReportRequestSchema,
+    service: EmailService = Depends(get_email_service)
+):
+    """
+    Sends the final structured candidate report via email using Gmail SMTP.
+    """
+    success = service.send_report(
+        to_email=request.to_email,
+        candidate_name=request.candidate_name,
+        job_title=request.job_title,
+        verdict=request.verdict,
+        primary_reason=request.primary_reason,
+        salary_estimate=request.salary_estimate
+    )
+    
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to send the email via backend SMTP.")
+    return {"status": "success", "message": "Email sent successfully."}
 
 from app.core.socket_manager import manager
 from fastapi import WebSocket

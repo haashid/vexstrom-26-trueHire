@@ -1,10 +1,17 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import styles from "./Navbar.module.css";
 import { motion } from "framer-motion";
 
 export default function Navbar() {
+    const pathname = usePathname();
+
+    if (pathname !== "/") {
+        return null;
+    }
+
     return (
         <motion.nav
             className={styles.navbarWrapper}

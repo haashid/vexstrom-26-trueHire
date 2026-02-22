@@ -11,7 +11,6 @@ import {
     IconCheckCircle, IconAlertTriangle, IconStar, IconSend,
 } from '@/components/Icons';
 import { generateVerdict } from '@/lib/api';
-import emailjs from '@emailjs/browser';
 
 const AGENT_ICONS: Record<string, React.ComponentType<any>> = {
     'A1': IconCpu,
@@ -26,23 +25,12 @@ export default function VerdictPage() {
     const [activeAgent, setActiveAgent] = useState<string | null>(null);
     const [confWidth, setConfWidth] = useState(0);
 
-    const [candidateEmail, setCandidateEmail] = useState('');
+    const [candidateEmail, setCandidateEmail] = useState('snvineeth10@gmail.com');
     const [isSending, setIsSending] = useState(false);
     const [emailStatus, setEmailStatus] = useState<'idle' | 'success' | 'error'>('idle');
     const [emailErrorMsg, setEmailErrorMsg] = useState('');
 
     useScrollReveal([data]);
-
-    const formatListToText = (items: any[], type: 'strength' | 'improvement') => {
-        if (!items || items.length === 0) return 'None recorded.';
-        return items.map(item => {
-            if (type === 'strength') return `• ${item.name || item.skill_name}: Verified during analysis.`;
-            // Handles both redFlags (claim/contradiction) and discrepancyLog (claim/contradiction)
-            const claim = item.claim || item.topic || 'Observation';
-            const issue = item.contradiction || item.issue || item.details || '';
-            return `• [${item.severity || 'Medium'}]: ${claim}\n  -> ${issue}`;
-        }).join('\n\n');
-    };
 
     const handleSendEmail = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -51,38 +39,30 @@ export default function VerdictPage() {
         setEmailStatus('idle');
 
         try {
-            // Reconstruct lists from parsed data
-            const strengthsRaw = data?.skills || [];
-            let improvementsRaw: any[] = [];
-            if (data?.discrepancyLog && data.discrepancyLog.length > 0) {
-                improvementsRaw = [...data.discrepancyLog];
-            } else if (data?.redFlags && data.redFlags.length > 0) {
-                improvementsRaw = [...data.redFlags];
+            const response = await fetch('http://localhost:8000/send-report', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    to_email: candidateEmail,
+                    candidate_name: data?.name || 'Candidate',
+                    job_title: data?.jobTitle || 'Role',
+                    verdict: data?.decision || 'Review Pending',
+                    primary_reason: data?.summary || 'See attached analysis.',
+                    salary_estimate: data?.salary ? `${data.salary.min_salary.toLocaleString()} - ${data.salary.max_salary.toLocaleString()} ${data.salary.salary_currency}` : 'N/A'
+                })
+            });
+
+            if (!response.ok) {
+                const errData = await response.json();
+                throw new Error(errData.detail || 'Failed to send report');
             }
 
-            const templateParams = {
-                candidate_name: 'Candidate',
-                job_title: data?.jobTitle || 'Role',
-                verdict: data?.decision || 'Review Pending',
-                primary_reason: data?.summary || 'See attached analysis.',
-                salary_estimate: data?.salary ? `${data.salary.min_salary.toLocaleString()} - ${data.salary.max_salary.toLocaleString()} ${data.salary.salary_currency}` : 'N/A',
-                strengths_block: formatListToText(strengthsRaw, 'strength'),
-                improvement_block: formatListToText(improvementsRaw, 'improvement'),
-                to_email: candidateEmail
-            };
-
-            await emailjs.send(
-                process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || 'default_service',
-                process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || 'default_template',
-                templateParams,
-                process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || 'default_key'
-            );
             setEmailStatus('success');
             setCandidateEmail('');
             setEmailErrorMsg('');
         } catch (error: any) {
-            console.error('FAILED...', error?.text || error?.message || error);
-            setEmailErrorMsg(error?.text || error?.message || 'Unknown error occurred.');
+            console.error('FAILED...', error);
+            setEmailErrorMsg(error.message || 'Unknown error occurred.');
             setEmailStatus('error');
         } finally {
             setIsSending(false);
