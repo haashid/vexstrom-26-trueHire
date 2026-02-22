@@ -8,9 +8,10 @@ import {
     IconThumbsUp, IconThumbsDown, IconDownload, IconArrowRight,
     IconChevronDown, IconShieldAlert, IconFlag, IconBarChart,
     IconTarget, IconUsers, IconCpu, IconZap, IconShield,
-    IconCheckCircle, IconAlertTriangle, IconStar,
+    IconCheckCircle, IconAlertTriangle, IconStar, IconSend,
 } from '@/components/Icons';
 import { generateVerdict } from '@/lib/api';
+import emailjs from '@emailjs/browser';
 
 const AGENT_ICONS: Record<string, React.ComponentType<any>> = {
     'A1': IconCpu,
@@ -25,7 +26,44 @@ export default function VerdictPage() {
     const [activeAgent, setActiveAgent] = useState<string | null>(null);
     const [confWidth, setConfWidth] = useState(0);
 
+    const [candidateEmail, setCandidateEmail] = useState('');
+    const [isSending, setIsSending] = useState(false);
+    const [emailStatus, setEmailStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
     useScrollReveal([data]);
+
+    const handleSendEmail = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!candidateEmail) return;
+        setIsSending(true);
+        setEmailStatus('idle');
+
+        try {
+            const templateParams = {
+                candidate_name: 'Candidate',
+                job_title: data?.jobTitle || 'Role',
+                verdict: data?.decision || 'Review Pending',
+                primary_reason: data?.summary || 'See attached analysis.',
+                salary_estimate: data?.salary ? `${data.salary.min_salary.toLocaleString()} - ${data.salary.max_salary.toLocaleString()} ${data.salary.salary_currency}` : 'N/A',
+                to_email: candidateEmail
+            };
+
+            await emailjs.send(
+                process.env.NEXT_PUBLIC_EMAILJS_SERVICE_ID || 'default_service',
+                process.env.NEXT_PUBLIC_EMAILJS_TEMPLATE_ID || 'default_template',
+                templateParams,
+                process.env.NEXT_PUBLIC_EMAILJS_PUBLIC_KEY || 'default_key'
+            );
+            setEmailStatus('success');
+            setCandidateEmail('');
+        } catch (error) {
+            console.error('FAILED...', error);
+            setEmailStatus('error');
+        } finally {
+            setIsSending(false);
+            setTimeout(() => setEmailStatus('idle'), 5000);
+        }
+    };
 
     useEffect(() => {
         const fetchVerdict = async () => {
@@ -90,7 +128,12 @@ export default function VerdictPage() {
                         position: result.verdict,
                         reasoning: trace
                     })),
-                    consensus: result.summary
+                    consensus: result.summary,
+
+                    // Salary Market Data
+                    jobTitle: result.inferred_job_title,
+                    experience: result.inferred_years_of_experience,
+                    salary: result.salary_suggestion
                 };
 
                 setData(mapped);
@@ -355,8 +398,39 @@ export default function VerdictPage() {
                         <p style={{ fontFamily: 'var(--font-inter)', fontSize: '0.95rem', color: 'rgba(255,255,255,0.8)', lineHeight: 1.8, fontWeight: 500 }}>{data.consensus}</p>
                     </div>
 
+                    {/* Market Salary Analysis (Injected via RapidAPI) */}
+                    {(data.salary || data.jobTitle) && (
+                        <div className="card-glass reveal delay-5" style={{ padding: 'clamp(16px,2vw,24px)', borderRadius: 16, border: `1px solid ${data.salary ? 'var(--green)30' : 'var(--yellow)30'}`, background: `linear-gradient(135deg, ${data.salary ? 'var(--green)05' : 'var(--yellow)05'} 0%, transparent 100%)` }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+                                <div style={{ width: 28, height: 28, borderRadius: 8, background: 'var(--green)10', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                    <IconBarChart size={14} color="var(--green)" />
+                                </div>
+                                <span className="section-label" style={{ color: 'var(--text-primary)' }}>Market Salary Analysis</span>
+                            </div>
+
+                            <div style={{ marginBottom: 16 }}>
+                                <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.75rem', color: 'var(--text-dim)', textTransform: 'uppercase', fontWeight: 600 }}>Inferred Profile</div>
+                                <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.9rem', color: 'var(--text-primary)', fontWeight: 600, textTransform: 'capitalize' }}>
+                                    {data.jobTitle} • {data.experience ? data.experience.replace(/_/g, ' ') : 'ALL'} YOE
+                                </div>
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+                                <span style={{ fontFamily: 'var(--font-inter)', fontSize: '2rem', fontWeight: 800, color: 'var(--green)', letterSpacing: '-0.03em' }}>
+                                    {data.salary?.median_salary ? `${data.salary.median_salary.toLocaleString()} ${data.salary.salary_currency || 'USD'}` : 'N/A'}
+                                </span>
+                                <span style={{ fontFamily: 'var(--font-inter)', fontSize: '0.8rem', color: 'var(--text-dim)', fontWeight: 600 }}>/ year (Median)</span>
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '8px 12px', borderRadius: 8 }}>
+                                <span>Min: {data.salary?.min_salary ? data.salary.min_salary.toLocaleString() : 'N/A'}</span>
+                                <span>Max: {data.salary?.max_salary ? data.salary.max_salary.toLocaleString() : 'N/A'}</span>
+                            </div>
+                        </div>
+                    )}
+
                     {/* Score summary */}
-                    <div className="card-glass reveal delay-5" style={{ padding: 'clamp(13px,2vw,18px)', borderRadius: 12 }}>
+                    <div className="card-glass reveal delay-6" style={{ padding: 'clamp(13px,2vw,18px)', borderRadius: 12 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 12 }}>
                             <IconCheckCircle size={14} color="var(--text-dim)" />
                             <span className="section-label">Interview Summary</span>
@@ -378,6 +452,79 @@ export default function VerdictPage() {
                             </div>
                         ))}
                     </div>
+                </div>
+            </div>
+
+            {/* Email Report Section */}
+            <div className="reveal delay-7" style={{ marginTop: 40, borderTop: '1px solid var(--border-color)', paddingTop: 40, paddingBottom: 60 }}>
+                <div className="card-glass" style={{ padding: 'clamp(20px, 4vw, 32px)', borderRadius: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', maxWidth: 600, margin: '0 auto' }}>
+                    <div style={{ width: 48, height: 48, borderRadius: 24, background: 'rgba(255,255,255,0.05)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
+                        <IconSend size={24} color="var(--accent-primary)" />
+                    </div>
+                    <h3 style={{ fontFamily: 'var(--font-inter)', fontSize: '1.25rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 8, letterSpacing: '-0.02em' }}>
+                        Send Report to Candidate
+                    </h3>
+                    <p style={{ fontFamily: 'var(--font-inter)', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.5, maxWidth: '80%' }}>
+                        Securely email this verdict summary and market salary estimation directly to the candidate's inbox.
+                    </p>
+
+                    <form onSubmit={handleSendEmail} style={{ width: '100%', display: 'flex', gap: 12, position: 'relative' }}>
+                        <input
+                            type="email"
+                            placeholder="candidate@example.com"
+                            value={candidateEmail}
+                            onChange={(e) => setCandidateEmail(e.target.value)}
+                            required
+                            disabled={isSending}
+                            style={{
+                                flex: 1,
+                                padding: '12px 16px',
+                                borderRadius: 8,
+                                background: 'rgba(15,23,42,0.6)',
+                                border: '1px solid var(--border-color)',
+                                color: 'var(--text-primary)',
+                                fontFamily: 'var(--font-inter)',
+                                fontSize: '0.9rem',
+                                outline: 'none',
+                                transition: 'all 0.2s ease',
+                            }}
+                            onFocus={(e) => e.target.style.borderColor = 'var(--accent-primary)'}
+                            onBlur={(e) => e.target.style.borderColor = 'var(--border-color)'}
+                        />
+                        <button
+                            type="submit"
+                            disabled={isSending || !candidateEmail}
+                            style={{
+                                padding: '0 24px',
+                                borderRadius: 8,
+                                background: 'var(--accent-primary)',
+                                color: 'white',
+                                fontFamily: 'var(--font-inter)',
+                                fontSize: '0.9rem',
+                                fontWeight: 600,
+                                border: 'none',
+                                cursor: isSending || !candidateEmail ? 'not-allowed' : 'pointer',
+                                opacity: isSending || !candidateEmail ? 0.7 : 1,
+                                transition: 'all 0.2s',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 8
+                            }}
+                        >
+                            {isSending ? 'Sending...' : 'Send'}
+                        </button>
+                    </form>
+
+                    {emailStatus === 'success' && (
+                        <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--green)', fontSize: '0.85rem', fontFamily: 'var(--font-inter)' }}>
+                            <IconCheckCircle size={14} /> Report sent successfully!
+                        </div>
+                    )}
+                    {emailStatus === 'error' && (
+                        <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--red)', fontSize: '0.85rem', fontFamily: 'var(--font-inter)' }}>
+                            <IconAlertTriangle size={14} /> Failed to send. Please check your EmailJS configuration.
+                        </div>
+                    )}
                 </div>
             </div>
 

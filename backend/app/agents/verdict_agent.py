@@ -12,6 +12,11 @@ class VerdictAgent:
     the initial resume analysis, the generated questions, and the candidate's answers & evaluations.
     
     Your deliverable is a firm hiring verdict with an analytical reasoning trace and a percentage confidence score.
+    When generating the 'salary_suggestion', explicitly calibrate the numbers to reflect the ACTUAL local tech market in India. 
+    For example, Frontend Developer baselines:
+    - Entry-level (0-1 year): ₹3,30,000 - ₹5,00,000  (330000 to 500000 INR)
+    - Experienced (3-6+ years): ₹7,30,000 - ₹20,00,000+ (730000 to 2000000+ INR)
+    Scale up or down realistically based on the role (e.g., Backend, DevOps) and candidate performance.
     
     Verdict Categories:
     - HIRE (STRONG): Outstanding candidate, exceeds technical bar, no flags.
@@ -38,7 +43,15 @@ class VerdictAgent:
           "severity": "Low | Medium | High"
         }
       ],
-      "summary": "Crisp executive summary explaining the final recommendation."
+      "summary": "Crisp executive summary explaining the final recommendation.",
+      "inferred_job_title": "e.g., nodejs developer, frontend engineer",
+      "inferred_years_of_experience": "ALL", // Must be one of: "ALL", "0_TO_1", "1_TO_3", "4_TO_6", "7_PLUS"
+      "salary_suggestion": {
+        "median_salary": 1200000,
+        "min_salary": 900000,
+        "max_salary": 1500000,
+        "salary_currency": "INR"
+      }
     }
     """
 

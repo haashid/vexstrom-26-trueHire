@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
     OPENROUTER_API_KEY: str
+    RAPIDAPI_KEY: str
     MODEL_NAME: str = "openai/gpt-4o-mini"
     TEMPERATURE: float = 0.7
     ENV: str = "development"
