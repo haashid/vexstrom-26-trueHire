@@ -115,22 +115,27 @@ function FileUploadCard({ label, icon: CardIcon, description, accept, fileState,
       onDrop={onDrop}
       onClick={() => !disabled && inputRef.current?.click()}
       style={{
-        borderRadius: 8,
-        padding: 'clamp(28px,5vh,40px) clamp(20px,4vw,32px)',
+        borderRadius: 16,
+        padding: 'clamp(32px,6vh,48px) clamp(24px,5vw,40px)',
         cursor: disabled ? 'not-allowed' : 'pointer',
-        minHeight: 260,
+        minHeight: 280,
         display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-        gap: 16, textAlign: 'center',
+        gap: 20, textAlign: 'center',
         userSelect: 'none', position: 'relative', overflow: 'hidden',
-        transition: 'all 0.2s ease',
-        /* Solid backgrounds instead of glass */
+        transition: 'all 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
         background: loaded
-          ? 'var(--accent-soft)'
+          ? 'rgba(255, 255, 255, 0.8)'
           : drag
-            ? 'var(--accent-soft)'
-            : 'var(--bg-card)',
-        border: `2px ${loaded ? 'solid' : 'dashed'} ${loaded ? 'var(--accent-primary)' : drag ? 'var(--accent-primary)' : 'var(--border)'}`,
-        boxShadow: loaded ? 'var(--shadow-md)' : drag ? 'var(--shadow-lg)' : 'var(--shadow-sm)',
+            ? 'rgba(239, 246, 255, 0.8)'
+            : 'rgba(255, 255, 255, 0.5)',
+        backdropFilter: 'blur(24px)',
+        WebkitBackdropFilter: 'blur(24px)',
+        border: `1px ${loaded ? 'solid' : 'dashed'} ${loaded ? 'var(--accent-primary)' : drag ? 'var(--accent-primary)' : 'rgba(15,23,42,0.1)'}`,
+        boxShadow: loaded
+          ? '0 10px 40px -10px rgba(37, 99, 235, 0.15), inset 0 0 0 1px rgba(255, 255, 255, 1)'
+          : drag
+            ? '0 20px 40px -10px rgba(37, 99, 235, 0.1), inset 0 0 0 1px rgba(255, 255, 255, 0.8)'
+            : '0 4px 20px -5px rgba(0, 0, 0, 0.03), inset 0 0 0 1px rgba(255, 255, 255, 0.6)',
       }}
     >
       {/* Inner glow blob when active */}
@@ -143,37 +148,38 @@ function FileUploadCard({ label, icon: CardIcon, description, accept, fileState,
         <>
           {/* Icon container */}
           <div style={{
-            width: 48, height: 48, borderRadius: 8,
-            background: drag ? 'rgba(37,99,235,0.05)' : 'var(--bg-primary)',
-            border: `1px solid ${drag ? 'rgba(37,99,235,0.2)' : 'var(--border)'}`,
+            width: 64, height: 64, borderRadius: 16,
+            background: drag ? 'rgba(37,99,235,0.1)' : 'rgba(255, 255, 255, 0.8)',
+            border: `1px solid ${drag ? 'rgba(37,99,235,0.3)' : 'rgba(15,23,42,0.05)'}`,
             display: 'flex', alignItems: 'center', justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.03)',
             transition: 'all 0.2s', transform: drag ? 'scale(1.05)' : 'scale(1)',
           }}>
             {drag
-              ? <IconUpload size={24} color="var(--accent-primary)" />
-              : <CardIcon size={24} color="var(--text-secondary)" />
+              ? <IconUpload size={28} color="var(--accent-primary)" />
+              : <CardIcon size={28} color="var(--text-primary)" />
             }
           </div>
 
           <div>
-            <div style={{ fontFamily: 'var(--font-inter)', fontWeight: 600, fontSize: '0.95rem', color: drag ? 'var(--accent-primary)' : 'var(--text-primary)', marginBottom: 4, transition: 'color 0.2s' }}>
+            <div style={{ fontFamily: 'var(--font-inter)', fontWeight: 600, fontSize: '1.1rem', color: drag ? 'var(--accent-primary)' : 'var(--text-primary)', marginBottom: 6, transition: 'color 0.2s', letterSpacing: '-0.01em' }}>
               {drag ? 'Drop to upload' : `Upload ${label}`}
             </div>
-            <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{description}</div>
+            <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.95rem', color: 'var(--text-secondary)', fontWeight: 400 }}>{description}</div>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <div style={{ height: 1, width: 36, background: 'var(--border)' }} />
+            <div style={{ height: 1, width: 36, background: 'rgba(15,23,42,0.08)' }} />
             <span style={{ fontFamily: 'var(--font-inter)', fontSize: '0.75rem', color: 'var(--text-dim)' }}>or</span>
-            <div style={{ height: 1, width: 36, background: 'var(--border)' }} />
+            <div style={{ height: 1, width: 36, background: 'rgba(15,23,42,0.08)' }} />
           </div>
 
           <div style={{
             display: 'inline-flex', alignItems: 'center', gap: 8,
-            padding: '8px 16px', borderRadius: 6, pointerEvents: 'none',
-            background: 'var(--bg-primary)', border: '1px solid var(--border)',
-            fontFamily: 'var(--font-inter)', fontWeight: 500, fontSize: '0.85rem', color: 'var(--text-primary)',
-            boxShadow: '0 1px 2px rgba(15,23,42,0.05)',
+            padding: '10px 20px', borderRadius: 100, pointerEvents: 'none',
+            background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(15,23,42,0.08)',
+            fontFamily: 'var(--font-inter)', fontWeight: 500, fontSize: '0.9rem', color: 'var(--text-primary)',
+            boxShadow: '0 2px 8px rgba(15,23,42,0.04)',
           }}>
             <IconUpload size={15} color="var(--text-secondary)" />
             Browse files
@@ -185,28 +191,29 @@ function FileUploadCard({ label, icon: CardIcon, description, accept, fileState,
         /* Loaded state */
         <>
           <div style={{
-            width: 48, height: 48, borderRadius: 8,
-            background: 'rgba(16,185,129,0.05)', border: '1px solid rgba(16,185,129,0.2)',
+            width: 64, height: 64, borderRadius: 16,
+            background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.25)',
+            boxShadow: '0 4px 16px -4px rgba(16,185,129,0.2), inset 0 0 0 1px rgba(255,255,255,0.5)',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
           }}>
-            <IconFileCheck size={24} color="var(--green)" />
+            <IconFileCheck size={28} color="var(--green)" />
           </div>
           <div>
-            <div style={{ fontFamily: 'var(--font-inter)', fontWeight: 600, fontSize: '0.95rem', color: 'var(--text-primary)', marginBottom: 4 }}>{fileState.name}</div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: 8 }}>
+            <div style={{ fontFamily: 'var(--font-inter)', fontWeight: 600, fontSize: '1.05rem', color: 'var(--text-primary)', marginBottom: 6, letterSpacing: '-0.01em' }}>{fileState.name}</div>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 12 }}>
               {(fileState.size / 1024).toFixed(1)} KB · {fileState.content.split(/\s+/).filter(Boolean).length} words
             </div>
-            <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.8rem', color: 'var(--text-dim)' }}>Click to replace</div>
+            <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.85rem', color: 'var(--text-dim)' }}>Click to replace</div>
           </div>
           {/* Preview snippet */}
           <div style={{
-            width: '100%', background: 'var(--bg-primary)', borderRadius: 6, padding: '10px 14px',
-            fontFamily: 'var(--font-inter)', fontSize: '0.8rem', color: 'var(--text-secondary)',
-            lineHeight: 1.5, textAlign: 'left', border: '1px solid var(--border)', borderLeft: '3px solid var(--green)',
-            maxHeight: 70, overflow: 'hidden', position: 'relative',
+            width: '100%', background: 'rgba(255,255,255,0.6)', borderRadius: 12, padding: '12px 16px',
+            fontFamily: 'var(--font-inter)', fontSize: '0.85rem', color: 'var(--text-secondary)',
+            lineHeight: 1.6, textAlign: 'left', border: '1px solid rgba(15,23,42,0.04)', borderLeft: '4px solid var(--green)',
+            maxHeight: 80, overflow: 'hidden', position: 'relative',
           }}>
             {fileState.content.slice(0, 150)}...
-            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 24, background: 'linear-gradient(transparent, var(--bg-primary))' }} />
+            <div style={{ position: 'absolute', bottom: 0, left: 0, right: 0, height: 30, background: 'linear-gradient(transparent, rgba(255,255,255,0.9))' }} />
           </div>
         </>
       )}
@@ -266,18 +273,30 @@ export default function UploadPage() {
   };
 
   return (
-    <main style={{ background: 'var(--bg-primary)' }}>
+    <main>
       <Hero />
 
-      <div id="upload" style={{ maxWidth: 1040, margin: '0 auto', padding: 'clamp(36px,7vh,64px) clamp(16px,4vw,36px) 80px' }}>
+      <div id="upload" style={{ maxWidth: 1200, margin: '0 auto', padding: 'clamp(80px,10vh,120px) clamp(24px,5vw,40px) 100px', position: 'relative' }}>
+
+        {/* Subtle background glow for the whole section */}
+        <div style={{ position: 'absolute', top: '20%', left: '50%', transform: 'translate(-50%, -50%)', width: '100vw', maxWidth: '1400px', height: '800px', background: 'radial-gradient(ellipse at center, rgba(37,99,235,0.04) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0 }} />
+
+        <div className="reveal" style={{ textAlign: 'center', marginBottom: 64, position: 'relative', zIndex: 1 }}>
+          <h2 style={{ fontFamily: 'var(--font-inter)', fontWeight: 700, fontSize: 'clamp(2.5rem,5vw,3.5rem)', color: 'var(--text-primary)', letterSpacing: '-0.05em', marginBottom: 20 }}>
+            Deploy candidate intelligence.
+          </h2>
+          <p style={{ fontFamily: 'var(--font-inter)', fontSize: 'clamp(1.1rem,2vw,1.25rem)', color: 'var(--text-secondary)', maxWidth: 640, margin: '0 auto', lineHeight: 1.6, fontWeight: 400 }}>
+            Upload the candidate&apos;s resume and job description to initiate our multi-agent evaluation pipeline.
+          </p>
+        </div>
 
         {/* ── UPLOAD GRID */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,440px),1fr))', gap: 20, marginBottom: 20 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,440px),1fr))', gap: 32, marginBottom: 32, position: 'relative', zIndex: 1 }}>
           <div className="reveal-left">
             <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
               <IconFile size={15} color="var(--text-dim)" /> Candidate Resume
             </div>
-            <FileUploadCard label="Resume" icon={IconFile} description="Upload the candidate's CV or resume (PDF only)" accept=".pdf" fileState={resume} onFile={setResume} disabled={loading} />
+            <FileUploadCard label="Resume" icon={IconFile} description="Upload the candidate&apos;s CV or resume (PDF only)" accept=".pdf" fileState={resume} onFile={setResume} disabled={loading} />
           </div>
           <div className="reveal-right">
             <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', marginBottom: 10, display: 'flex', alignItems: 'center', gap: 6 }}>
@@ -298,18 +317,33 @@ export default function UploadPage() {
         )}
 
         {/* ── CTA */}
-        <div className="reveal delay-1">
+        <div className="reveal delay-1" style={{ position: 'relative', zIndex: 1, marginTop: 40 }}>
           <button className="btn-accent" disabled={!canSubmit} onClick={handleRun}
-            style={{ width: '100%', padding: 'clamp(14px,2vh,18px) 32px', fontSize: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10 }}>
+            style={{
+              width: '100%',
+              padding: 'clamp(18px,3vh,24px) 40px',
+              fontSize: '1.15rem',
+              fontWeight: 600,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 12,
+              borderRadius: '9999px',
+              background: canSubmit ? 'var(--text-primary)' : 'rgba(15, 23, 42, 0.08)',
+              color: canSubmit ? '#fff' : 'rgba(15, 23, 42, 0.65)',
+              boxShadow: canSubmit ? '0 15px 35px -5px rgba(15, 23, 42, 0.25)' : 'none',
+              border: canSubmit ? 'none' : '1px solid rgba(15,23,42,0.15)',
+              transition: 'all 0.3s cubic-bezier(0.16,1,0.3,1)'
+            }}>
             {loading
-              ? <><span className="animate-spin" style={{ width: 16, height: 16, border: '2px solid rgba(15,23,42,0.2)', borderTop: '2px solid var(--accent-primary)', borderRadius: '50%', display: 'inline-block' }} />Analyzing...</>
-              : <><span>Run Pre-Interview Analysis</span><IconArrowRight size={17} color="var(--text-primary)" /></>
+              ? <><span className="animate-spin" style={{ width: 16, height: 16, border: '2px solid rgba(255,255,255,0.2)', borderTop: '2px solid #fff', borderRadius: '50%', display: 'inline-block' }} />Analyzing...</>
+              : <><span>Run Pre-Interview Analysis</span><IconArrowRight size={17} color={canSubmit ? "#fff" : "rgba(15, 23, 42, 0.65)"} /></>
             }
           </button>
 
           {/* Status log */}
           {lines.length > 0 && (
-            <div style={{ marginTop: 18, padding: '18px 20px', background: 'rgba(255,255,255,0.8)', backdropFilter: 'blur(16px)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 9 }}>
+            <div style={{ marginTop: 32, padding: '32px 36px', background: 'rgba(255,255,255,0.7)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)', border: '1px solid rgba(15,23,42,0.06)', borderRadius: 24, display: 'flex', flexDirection: 'column', gap: 16, boxShadow: '0 20px 40px -10px rgba(0,0,0,0.04), inset 0 0 0 1px rgba(255,255,255,0.6)' }}>
               {lines.map((l, i) => (
                 <div key={i} className="animate-fade-in" style={{ display: 'flex', alignItems: 'center', gap: 10, fontFamily: 'JetBrains Mono', fontSize: '0.75rem', color: i === lines.length - 1 ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
                   {doneLines[i]
@@ -326,20 +360,33 @@ export default function UploadPage() {
         </div>
 
         {/* ── HOW IT WORKS */}
-        <div id="features" style={{ marginTop: 'clamp(60px,10vh,96px)' }}>
-          <div className="divider" style={{ marginBottom: 48 }} />
-          <div className="reveal" style={{ textAlign: 'center', marginBottom: 36 }}>
-            <h2 style={{ fontFamily: 'var(--font-inter)', fontWeight: 600, fontSize: 'clamp(1.2rem,3vw,1.5rem)', color: 'var(--text-primary)' }}>Analysis Pipeline</h2>
+        <div id="features" style={{ marginTop: 'clamp(100px,15vh,160px)', position: 'relative', zIndex: 1 }}>
+          <div className="reveal" style={{ textAlign: 'center', marginBottom: 64 }}>
+            <h2 style={{ fontFamily: 'var(--font-inter)', fontWeight: 700, fontSize: 'clamp(2.5rem,5vw,3.5rem)', color: 'var(--text-primary)', letterSpacing: '-0.05em', marginBottom: 20 }}>Analysis pipeline.</h2>
+            <p style={{ fontFamily: 'var(--font-inter)', fontSize: 'clamp(1.1rem,2vw,1.25rem)', color: 'var(--text-secondary)', maxWidth: 640, margin: '0 auto', lineHeight: 1.6, fontWeight: 400 }}>
+              Under the hood, we run an orchestrated swarm of expert agents mimicking a seasoned talent acquisition board.
+            </p>
           </div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,210px),1fr))', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(min(100%,240px),1fr))', gap: 24 }}>
             {AGENT_CARDS.map((item, i) => (
-              <div key={item.n} className={`card-glass reveal delay-${i + 1}`} style={{ padding: 'clamp(16px,2.5vw,20px)', position: 'relative', overflow: 'hidden' }}>
-                <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--text-dim)', marginBottom: 12 }}>{item.n}</div>
-                <div style={{ width: 40, height: 40, borderRadius: 6, background: 'var(--bg-primary)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 14 }}>
-                  <item.Icon size={18} color="var(--text-secondary)" />
+              <div key={item.n} className={`reveal delay-${i + 1}`} style={{
+                padding: 'clamp(32px,4vw,40px)', position: 'relative', overflow: 'hidden', borderRadius: 24,
+                background: 'rgba(255,255,255,0.6)', backdropFilter: 'blur(24px)', WebkitBackdropFilter: 'blur(24px)',
+                border: '1px solid rgba(15,23,42,0.06)', boxShadow: '0 10px 40px -10px rgba(0,0,0,0.03), inset 0 0 0 1px rgba(255,255,255,0.8)',
+                transition: 'transform 0.3s cubic-bezier(0.16,1,0.3,1), box-shadow 0.3s ease'
+              }} onMouseEnter={(e) => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = '0 20px 50px -10px rgba(0,0,0,0.06), inset 0 0 0 1px rgba(255,255,255,1)'; }} onMouseLeave={(e) => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 10px 40px -10px rgba(0,0,0,0.03), inset 0 0 0 1px rgba(255,255,255,0.8)'; }}>
+                {/* Decorative glowing orb in corner */}
+                <div style={{ position: 'absolute', top: -30, right: -30, width: 120, height: 120, background: 'radial-gradient(circle, rgba(15,23,42,0.03) 0%, transparent 70%)', borderRadius: '50%' }} />
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
+                  <div style={{ width: 56, height: 56, borderRadius: 16, background: 'rgba(255,255,255,0.8)', border: '1px solid rgba(15,23,42,0.06)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 12px rgba(0,0,0,0.03)' }}>
+                    <item.Icon size={24} color="var(--text-primary)" />
+                  </div>
+                  <div style={{ fontFamily: 'var(--font-mono)', fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-dim)' }}>{item.n}</div>
                 </div>
-                <div style={{ fontFamily: 'var(--font-inter)', fontWeight: 600, fontSize: '0.95rem', marginBottom: 6, color: 'var(--text-primary)' }}>{item.title}</div>
-                <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.85rem', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{item.desc}</div>
+
+                <div style={{ fontFamily: 'var(--font-inter)', fontWeight: 700, fontSize: '1.25rem', marginBottom: 12, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>{item.title}</div>
+                <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{item.desc}</div>
               </div>
             ))}
           </div>

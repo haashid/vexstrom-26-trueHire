@@ -39,16 +39,17 @@ export default function VerdictPage() {
         setEmailStatus('idle');
 
         try {
-            const response = await fetch('http://localhost:8000/send-report', {
+            const response = await fetch('/api/send-report', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     to_email: candidateEmail,
                     candidate_name: data?.name || 'Candidate',
                     job_title: data?.jobTitle || 'Role',
-                    verdict: data?.decision || 'Review Pending',
-                    primary_reason: data?.summary || 'See attached analysis.',
-                    salary_estimate: data?.salary ? `${data.salary.min_salary.toLocaleString()} - ${data.salary.max_salary.toLocaleString()} ${data.salary.salary_currency}` : 'N/A'
+                    verdict: data?.verdict || 'Review Pending',
+                    primary_reason: data?.primaryReason || 'See attached analysis.',
+                    salary_estimate: data?.salary ? `${data.salary.min_salary.toLocaleString()} - ${data.salary.max_salary.toLocaleString()} ${data.salary.salary_currency}` : 'N/A',
+                    full_report: data
                 })
             });
 
@@ -319,7 +320,7 @@ export default function VerdictPage() {
                                     <div style={{ flex: 1 }}>
                                         <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.9rem', color: 'var(--text-primary)', lineHeight: 1.6, marginBottom: 12 }}>
                                             <span style={{ color: 'var(--text-dim)', fontWeight: 600 }}>CANDIDATE CLAIM:</span> <br />
-                                            <span style={{ fontWeight: 500 }}>"{d.claim}"</span>
+                                            <span style={{ fontWeight: 500 }}>&quot;{d.claim}&quot;</span>
                                         </div>
                                         <div style={{ fontFamily: 'var(--font-inter)', fontSize: '0.85rem', color: 'var(--red)', lineHeight: 1.6, background: 'var(--red)05', padding: '12px 16px', borderRadius: 8, border: '1px dashed var(--red)20' }}>
                                             <div style={{ fontWeight: 800, fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Agent Finding:</div>
@@ -470,7 +471,7 @@ export default function VerdictPage() {
                         Send Report to Candidate
                     </h3>
                     <p style={{ fontFamily: 'var(--font-inter)', fontSize: '0.9rem', color: 'var(--text-secondary)', marginBottom: 24, lineHeight: 1.5, maxWidth: '80%' }}>
-                        Securely email this verdict summary and market salary estimation directly to the candidate's inbox.
+                        Securely email this verdict summary and market salary estimation directly to the candidate&apos;s inbox.
                     </p>
 
                     <form onSubmit={handleSendEmail} style={{ width: '100%', display: 'flex', gap: 12, position: 'relative' }}>

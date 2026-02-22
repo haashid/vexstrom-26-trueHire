@@ -21,15 +21,18 @@ export const metadata: Metadata = {
   description: "Stop interviewing candidates. Start uncovering them. AI-powered interview intelligence for enterprise hiring teams.",
 };
 
+import Footer from "@/components/Footer";
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${jetbrainsMono.variable}`}>
       <body className="font-sans antialiased text-slate-800 bg-slate-50 min-h-screen">
         <AnimatedBackground />
         <Navbar />
-        <main style={{ position: 'relative', zIndex: 1 }}>
+        <main style={{ position: 'relative', zIndex: 1, flex: 1, display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
           {children}
         </main>
+        <Footer />
       </body>
     </html>
   );
