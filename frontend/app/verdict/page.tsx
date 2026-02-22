@@ -29,8 +29,20 @@ export default function VerdictPage() {
     const [candidateEmail, setCandidateEmail] = useState('');
     const [isSending, setIsSending] = useState(false);
     const [emailStatus, setEmailStatus] = useState<'idle' | 'success' | 'error'>('idle');
+    const [emailErrorMsg, setEmailErrorMsg] = useState('');
 
     useScrollReveal([data]);
+
+    const formatListToText = (items: any[], type: 'strength' | 'improvement') => {
+        if (!items || items.length === 0) return 'None recorded.';
+        return items.map(item => {
+            if (type === 'strength') return `• ${item.name || item.skill_name}: Verified during analysis.`;
+            // Handles both redFlags (claim/contradiction) and discrepancyLog (claim/contradiction)
+            const claim = item.claim || item.topic || 'Observation';
+            const issue = item.contradiction || item.issue || item.details || '';
+            return `• [${item.severity || 'Medium'}]: ${claim}\n  -> ${issue}`;
+        }).join('\n\n');
+    };
 
     const handleSendEmail = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,12 +51,23 @@ export default function VerdictPage() {
         setEmailStatus('idle');
 
         try {
+            // Reconstruct lists from parsed data
+            const strengthsRaw = data?.skills || [];
+            let improvementsRaw: any[] = [];
+            if (data?.discrepancyLog && data.discrepancyLog.length > 0) {
+                improvementsRaw = [...data.discrepancyLog];
+            } else if (data?.redFlags && data.redFlags.length > 0) {
+                improvementsRaw = [...data.redFlags];
+            }
+
             const templateParams = {
                 candidate_name: 'Candidate',
                 job_title: data?.jobTitle || 'Role',
                 verdict: data?.decision || 'Review Pending',
                 primary_reason: data?.summary || 'See attached analysis.',
                 salary_estimate: data?.salary ? `${data.salary.min_salary.toLocaleString()} - ${data.salary.max_salary.toLocaleString()} ${data.salary.salary_currency}` : 'N/A',
+                strengths_block: formatListToText(strengthsRaw, 'strength'),
+                improvement_block: formatListToText(improvementsRaw, 'improvement'),
                 to_email: candidateEmail
             };
 
@@ -56,8 +79,10 @@ export default function VerdictPage() {
             );
             setEmailStatus('success');
             setCandidateEmail('');
-        } catch (error) {
-            console.error('FAILED...', error);
+            setEmailErrorMsg('');
+        } catch (error: any) {
+            console.error('FAILED...', error?.text || error?.message || error);
+            setEmailErrorMsg(error?.text || error?.message || 'Unknown error occurred.');
             setEmailStatus('error');
         } finally {
             setIsSending(false);
@@ -521,8 +546,9 @@ export default function VerdictPage() {
                         </div>
                     )}
                     {emailStatus === 'error' && (
-                        <div style={{ marginTop: 16, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--red)', fontSize: '0.85rem', fontFamily: 'var(--font-inter)' }}>
-                            <IconAlertTriangle size={14} /> Failed to send. Please check your EmailJS configuration.
+                        <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, color: 'var(--red)', fontSize: '0.85rem', fontFamily: 'var(--font-inter)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}><IconAlertTriangle size={14} /> Failed to send. Please check your EmailJS configuration.</div>
+                            <div style={{ fontSize: '0.75rem', opacity: 0.8 }}>Error: {emailErrorMsg}</div>
                         </div>
                     )}
                 </div>
