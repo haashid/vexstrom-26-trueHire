@@ -185,5 +185,7 @@ async def websocket_transcript(websocket: WebSocket):
         while True:
             # Keep connection open
             await websocket.receive_text()
-    except Exception:
+    except Exception as e:
+        print(f"WebSocket disconnected or error: {e}")
+    finally:
         manager.disconnect(websocket)
