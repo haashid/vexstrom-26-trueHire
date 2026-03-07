@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Interview Committee Tester</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>AI Interview Committee</h1>
+            <p>End-to-End Platform Tester</p>
+        </header>
+
+        <main>
+            <!-- Phase 1: Analyze Resume -->
+            <section id="phase-1" class="active card">
+                <h2>Phase 1: Resume Analysis</h2>
+                <div class="input-group">
+                    <label for="jd">Job Description (PDF)</label>
+                    <input type="file" id="jd" accept="application/pdf" required>
+                </div>
+                <div class="input-group">
+                    <label for="resume">Candidate Resume (PDF)</label>
+                    <input type="file" id="resume" accept="application/pdf" required>
+                </div>
+                <button id="btn-analyze" class="primary-btn">Analyze & Generate Questions</button>
+                <div id="analyze-spinner" class="spinner hidden"></div>
+                <div id="analyze-error" class="error hidden"></div>
+            </section>
+
+            <!-- Phase 2: Results & Interview -->
+            <section id="phase-2" class="hidden card">
+                <div class="results-header">
+                    <h2>Phase 2: Interview Loop</h2>
+                    <div id="fit-score-badge" class="badge"></div>
+                </div>
+
+                <div class="analysis-results">
+                    <div class="strengths">
+                        <h3>Key Strengths</h3>
+                        <ul id="strengths-list"></ul>
+                    </div>
+                    <div class="red-flags">
+                        <h3>Red Flags</h3>
+                        <ul id="red-flags-list"></ul>
+                    </div>
+                </div>
+
+                <div class="question-section">
+                    <h3>Generated Question Bank</h3>
+                    <select id="question-select"></select>
+                    
+                    <div id="current-question-container" class="question-box">
+                        <span id="q-tier" class="tier-badge"></span>
+                        <p id="current-question-text"></p>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="candidate-answer">Simulated Candidate Answer</label>
+                        <textarea id="candidate-answer" rows="4" placeholder="Type a mock answer to evaluate..."></textarea>
+                    </div>
+                    <button id="btn-evaluate" class="secondary-btn">Evaluate Answer</button>
+                    <div id="eval-spinner" class="spinner hidden"></div>
+                    <div id="eval-error" class="error hidden"></div>
+                </div>
+            </section>
+
+            <!-- Phase 3: Evaluation Result -->
+            <section id="phase-3" class="hidden card">
+                <h2>Evaluation Results</h2>
+                <div class="eval-grid">
+                    <div class="eval-item">
+                        <span class="label">Depth Score:</span>
+                        <span id="eval-depth" class="value"></span>
+                    </div>
+                    <div class="eval-item">
+                        <span class="label">Performance:</span>
+                        <span id="eval-label" class="value"></span>
+                    </div>
+                    <div class="eval-item">
+                        <span class="label">Bluff Likelihood:</span>
+                        <span id="eval-bluff" class="value"></span>
+                    </div>
+                </div>
+                
+                <div id="contradiction-alert" class="alert hidden">
+                    <strong>Contradiction Detected!</strong>
+                    <p id="contradiction-text"></p>
+                </div>
+
+                <div class="follow-up">
+                    <strong>Suggested Follow-up:</strong>
+                    <p id="eval-followup"></p>
+                </div>
+
+                <div class="actions">
+                    <button id="btn-next-question" class="outline-btn">Ask Another Question</button>
+                    <button id="btn-verdict" class="danger-btn">Generate Final Verdict</button>
+                    <div id="verdict-spinner" class="spinner hidden"></div>
+                </div>
+            </section>
+
+            <!-- Phase 4: Final Verdict -->
+            <section id="phase-4" class="hidden card">
+                <h2>Committee Verdict</h2>
+                <div class="verdict-header">
+                    <h1 id="final-decision"></h1>
+                </div>
+                
+                <div class="summary-box">
+                    <p id="verdict-summary"></p>
+                </div>
+
+                <h3>Reasoning Trace</h3>
+                <ul id="reasoning-list" class="reasoning-trace"></ul>
+
+                <button onclick="location.reload()" class="outline-btn mt-4">Start New Interview</button>
+            </section>
+        </main>
+    </div>
+    <script src="app.js?v=2.0"></script>
+</body>
+</html>
